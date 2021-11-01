@@ -1,0 +1,67 @@
+:root {
+    --size: 1000px;
+    --blob-speed: 2s;
+    --blur: 100px;
+}
+
+#bounce {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    z-index: -2;
+}
+
+#glass {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    backdrop-filter: blur(var(--blur));
+}
+
+.blob {
+    opacity: .35;
+    transition: border-radius var(--blob-speed) linear, background-color 1s linear;
+}
+
+.x, .y, .x2, .y2, .x3, .y3 {
+    width: var(--size);
+    height: var(--size);
+}
+
+.x {
+    position: absolute;
+}
+
+.x2 {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.x3 {
+    position: absolute;
+    top: 0;
+    left: calc(50vw - (var(--size)/2));
+}
+
+.y {
+    position: absolute;
+}
+
+.y2 {
+    position: absolute;
+    top: calc(100vh - var(--size));
+    left: 0;
+}
+
+.y3 {
+    position: absolute;
+    top: calc(50vh - (var(--size)/2));
+}
+
+
+
+

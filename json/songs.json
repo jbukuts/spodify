@@ -1,0 +1,44 @@
+[
+    {
+        "title" : "THIS TIME",
+        "artist" : "Jake Bukuts",
+        "album" : "FROM THE NEW WORLD",
+        "path" : "./songs/this_time.wav"
+    },
+    {
+        "title" : "THE JOY",
+        "artist" : "Jake Bukuts",
+        "album" : "FROM THE NEW WORLD",
+        "path" : "./songs/the_joy.wav"
+    },
+    {
+        "title" : "VOCODE ME",
+        "artist" : "Jake Bukuts",
+        "album" : "FROM THE NEW WORLD",
+        "path" : "./songs/vocode_me.wav"
+    },
+    {
+       "title" : "FRANK",
+        "artist" : "Jake Bukuts",
+        "album" : "A RENEGADE DREAM",
+        "path" : "./songs/FRANK.wav"
+    },
+    {
+        "title" : "FAKE",
+        "artist" : "Jake Bukuts",
+        "album" : "A RENEGADE DREAM",
+        "path" : "./songs/fake.wav"
+    },
+    {
+        "title" : "I\"LL BE FINE",
+        "artist" : "Jake Bukuts",
+        "album" : "FROM THE NEW WORLD",
+        "path" : "./songs/ill_be_fine.wav"
+    },
+    {
+        "title" : "Heaven & Hell",
+        "artist" : "Kanye West",
+        "album" : "Donda",
+        "path" : "./songs/kanye.mp3"
+    }
+]

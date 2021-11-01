@@ -1,0 +1,262 @@
+@font-face {
+    font-family: 'ChicagoFLF'; /*a name to be used later*/
+    src: url('../fonts/ChicagoFLF.ttf'); /*URL to font*/
+}
+
+@font-face {
+    font-family: 'SF-Pro-Display-Regular'; /*a name to be used later*/
+    src: url('../fonts/SF-Pro-Display-Regular.otf'); /*URL to font*/
+}
+
+:root {
+    --window-padding: 15px;
+    --window-height: 300px;
+    --window-width: 400px;
+    --hr-margin: 2px;
+    --slide-animation-time: 500ms;
+}
+
+body {
+    font-family: 'ChicagoFLF';
+    overflow: hidden;
+    margin: 0;
+}
+
+hr {
+    margin-top: var(--hr-margin);
+    margin-bottom: calc(-1 * var(--hr-margin));
+    border-top: 1px solid rgb(0, 0, 0);
+}
+
+p {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    font-size: 20px;
+    transition: all .25s;
+    -webkit-font-smoothing : none;
+}
+
+p:hover {
+    background: black;
+    color: white;
+    cursor: pointer;
+}
+
+#title {
+    text-align: center;
+    pointer-events: none;
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#screen {
+    width: var(--window-width);
+    height: var(--window-height);
+    border: 1px black solid;
+    padding: var(--window-padding);
+    background-color: white;
+    position: absolute;
+    top: calc(50% - (var(--window-height)/2) - var(--window-padding));
+    left: calc(50% - (var(--window-width)/2) - var(--window-padding));
+    overflow-x: hidden;
+    overflow-y: hidden;
+    display: none;
+    transform: scale(1);
+}
+
+.menu {
+    width: inherit;
+    height: calc(100% - 26px - var(--hr-margin) - (var(--window-padding)*2));
+    position: absolute;
+    display: flex;
+    flex-flow:row;
+}
+
+.lines {
+    margin-right: 15px;
+    flex:none;
+    width: 400px;
+    height: 100%;
+    position: relative;
+    transition: transform var(--slide-animation-time);
+    overflow: auto;
+}
+
+.lines > p:first-child {
+    margin-top: 4px;
+}
+
+.lines > p {
+    padding-left: 5px;
+    padding-right: 20px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+.lines > p.menu-item {
+    white-space: nowrap;
+  	overflow: hidden;
+  	text-overflow: ellipsis;
+    display: block;
+    position: relative;
+    max-width: 100%;
+}
+
+.lines > p.menu-item:hover {
+    /* animation: floatText 15s infinite linear; */
+    /* text-overflow: unset; */
+}
+
+.lines > p.menu-item:hover:after {
+    content: "";
+}
+
+@keyframes floatText {
+    to {
+      transform: translateX(-100%);
+    }
+}
+
+.lines > p.menu-item:after {
+    content: ">";
+    position: absolute;
+    right: 5px;
+}
+
+.lines > .song-item {
+    white-space: nowrap;
+  	overflow: hidden;
+  	text-overflow: ellipsis;
+    display: block;
+}
+
+#playButton {
+    height: 32px;
+    width:38px;
+    position: absolute;
+    transform:scale(.5);
+}
+
+#playButton:hover {
+    cursor: pointer;
+}
+
+/** now playing screen **/
+#scrub {
+    width: 90%;
+    height: 15px;
+    bottom: 10px;
+    border-radius: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 25px;
+    border: 2px solid black;
+    overflow: hidden;
+    transition: all 100ms ease-in-out;
+}
+
+#scrub-bar {
+    width: 0%;
+    height: 15px;
+    background-color: rgba(0, 0, 0, 0.24);
+    pointer-events: none;
+}
+
+#scrub-handle {
+    height: 11px;
+    width: 11px;
+    background-color: rgb(0, 0, 0);
+    transform: rotate(45deg);
+    position: relative;
+    top: 2px;
+    right: 0%;
+    left: calc(100% - 5.5px);
+    display: none;
+    pointer-events: none;
+}
+
+#scrub:hover #scrub-bar  {
+    background-color: rgba(0, 0, 0, 0.0);
+}
+
+#scrub:hover #scrub-handle  {
+    display: block;
+}
+
+#scrub:hover {
+    border-radius: 0px;
+}
+
+#song-title, #artist, #album, #player-time {
+    text-align: center;
+    -webkit--webkit-font-smoothing: none;
+    font-weight: normal;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#song-title, #artist, #album {
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+#player-time {
+    width: 90%;
+    margin: auto;
+    margin-top: 10px;
+    text-align: justify;
+}
+
+#player-time:after {
+    content: "";
+    display: inline-block;
+    width: 100%;
+}
+
+#song-title {
+    margin-top: 65px;
+}
+
+/** footer text **/
+h5 {
+    text-align: center;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0; 
+    color: white;
+    font-family: 'SF-Pro-Display-Regular'
+}
+
+
+/** scrollbar styles **/
+::-webkit-scrollbar {
+    width: 15px;
+}
+
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 15px 15px transparent;
+    border: solid 1px black;
+}
+
+::-webkit-scrollbar-thumb {
+    box-shadow: inset 0 0 15px 15px black;
+    border: solid 4px transparent;
+}
+
+/** login button **/
+#btn-login {
+    position: absolute;
+    width: 200px;
+    height: 100px;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+}

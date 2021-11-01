@@ -1,7 +1,7 @@
 // log the user in and get their  access token
 function login(callback) {
     var CLIENT_ID = '0981792b5bc94457a102687309d0beb6';
-    var REDIRECT_URI = 'http://localhost:35729/proxy.html';
+    var REDIRECT_URI = 'https://jbukuts.com/spodify/proxy.html';
 
     var url = getLoginURL([
         'user-read-email',

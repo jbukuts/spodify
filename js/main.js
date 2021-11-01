@@ -25,7 +25,7 @@ const spotifyData = new SpotifyData();
 // log the user in and get their  access token
 function login(callback) {
     var CLIENT_ID = '0981792b5bc94457a102687309d0beb6';
-    var REDIRECT_URI = 'http://localhost:35729/proxy.html';
+    var REDIRECT_URI = 'https://jbukuts.com/spodify/proxy.html';
     function getLoginURL(scopes) {
         return 'https://accounts.spotify.com/authorize?client_id=' + CLIENT_ID +
           '&redirect_uri=' + encodeURIComponent(REDIRECT_URI) +

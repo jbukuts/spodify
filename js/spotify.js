@@ -1,5 +1,5 @@
-import { getPalette } from './palette/palette.js';
-import { createGradient, getRandomInt } from './helper.js';
+import { createPalette } from './palette/palette.js';
+import { getRandomInt, createTimeString } from './helper.js';
 
 Number.prototype.clamp = function(min, max) {
     return Math.min(Math.max(this, min), max);
@@ -36,7 +36,6 @@ export function createPlayer(token) {
 
             // volume control listeners
             document.addEventListener('keydown', (e) => {
-                console.log(e.code);
                 if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
                     var volMod = 0;
                     switch (e.code) {
@@ -56,6 +55,11 @@ export function createPlayer(token) {
                 }
                 else if (e.code === 'ArrowRight') {
                     player.nextTrack();
+                }
+                else if(e.code === 'Space') {
+                    const searchBar = document.getElementById('search');
+                    if (!searchBar || searchBar !== document.activeElement)
+                        player.togglePlay();
                 }
             });
         });
@@ -79,31 +83,31 @@ export function createPlayer(token) {
 
         // update the current track when needed
         player.addListener('player_state_changed', (state) => {
-            
+            //console.log(state.track_window);
             const stateTrack = state.track_window.current_track;
             const storedTrack = JSON.parse(localStorage.getItem('current_song'));
             document.getElementById('playButton').innerHTML = state.paused ? playBtn : pauseBtn;
-
-            if (storedTrack && stateTrack.id !== storedTrack.id) {
+            
+            if (stateTrack && storedTrack && stateTrack.id !== storedTrack.id) {
                 localStorage.setItem('current_song', JSON.stringify(stateTrack));
                 const imageURL = stateTrack.album.images[0].url;
-                console.log(imageURL);
+                //console.log(imageURL);
 
-                getPalette(imageURL, 10).then(r => { 
-                    console.log(r);
+                // get the palette
+                createPalette(imageURL, 10, 16).then(r => { 
+                    // console.log(r);
+
+                    // our bg is first in the list
                     const bgColor = r[0];
-
                     document.body.style.background = `rgb(${bgColor[0]},${bgColor[1]},${bgColor[2]})`;
+
+                    // for each of the blobs pull a random color
                     blobs.forEach(b => {
                         const randomColor = r[getRandomInt(1,r.length)];
-                        console.log(randomColor);
+                        //console.log(randomColor);
                         b.style.background = `rgb(${randomColor[0]},${randomColor[1]},${randomColor[2]})`;
                     })                
                 });
-            }
-            else {
-                console.log('No track in localStorage. Storing now and retriggering');
-                localStorage.setItem('current_song', JSON.stringify(stateTrack));
             }
         });
 
@@ -111,7 +115,48 @@ export function createPlayer(token) {
         document.addEventListener('scrub_song', async (e) => {
             await player.getCurrentState().then(async (state) => {
                 await player.seek(state.duration * e.detail);
+                player.resume();
             });
+        });
+
+        // pause the song when scrubbing
+        document.addEventListener('scrub_song_pause', async () => {
+            player.pause();
+        });
+
+        const drawToNowPlaying = async () => {
+            const scrubBar = document.getElementById('scrub-bar');
+            const playState = await player.getCurrentState();
+            const currentPlaying = playState.track_window.current_track;
+            document.getElementById('song-title').innerHTML = currentPlaying.name;
+            document.getElementById('artist').innerHTML = currentPlaying.artists[0].name;
+            document.getElementById('album').innerHTML = currentPlaying.album.name;
+
+            // get vals from player
+            const duration = playState.duration / 1000;
+            const currentTime = playState.position / 1000;
+            const percent = currentTime / duration;
+
+            // set the timers vals
+            document.getElementById('player-time').innerHTML = createTimeString(duration, currentTime);
+            scrubBar.style.width = `${percent * 100}%`;
+        };
+
+        document.addEventListener('show_now_playing', () => {
+            // we need click listeners
+            console.log('creating now playing events');
+            document.getElementById('album').onclick = (e) => {
+                console.log(e.target.textContent);
+                document.dispatchEvent(new CustomEvent('go_to_item', { detail : { album: e.target.textContent }}));
+            };
+
+            document.getElementById('artist').onclick = (e) => {
+                console.log(e.target.textContent);
+                document.dispatchEvent(new CustomEvent('go_to_item', { detail : { artist: e.target.textContent }}));
+            };
+            
+            // draw elements
+            drawToNowPlaying();
         });
     
         // toggle player
@@ -133,24 +178,9 @@ export function createPlayer(token) {
                         document.getElementById('artist').innerHTML = currentPlaying.artists[0].name;
                         document.getElementById('album').innerHTML = currentPlaying.album.name;
 
-                        // get vals from player
-                        const duration = playState.duration / 1000;
-                        const currentTime = playState.position / 1000;
-                        const percent = currentTime / duration;
-
-                        // current time
-                        const curMin = Math.floor(currentTime / 60);
-                        const curSec = Math.floor(currentTime - curMin * 60);
-                        const currStr = `${curMin}:${String(curSec).padStart(2,'0')}`;
-
-                        // time left
-                        const lefMin = Math.floor((duration - currentTime) / 60);
-                        const lefSec = Math.floor((duration - currentTime) - lefMin * 60);
-                        const lefStr = `-${lefMin}:${String(lefSec).padStart(2,'0')}`
-
-                        // set the timers vals
-                        document.getElementById('player-time').innerHTML = `${currStr} ${lefStr}`;
-                        scrubBar.style.width = `${percent * 100}%`;
+                        if (!playState.paused) {
+                            drawToNowPlaying();
+                        }
                     }
                     catch(e) {
                         console.error('there was an issue seeking', e);
@@ -200,8 +230,7 @@ export async function getUsersAlbumsSpotify(token) {
                     'Authorization': `Bearer ${token}`
                 }
             })
-            .then(response => response.json())
-            .then(data => data);
+            .then(response => response.json());
             fullAlbumList = fullAlbumList.concat(res.items);
             offset+= limit;
         } while(fullAlbumList.length % limit === 0)
@@ -210,4 +239,22 @@ export async function getUsersAlbumsSpotify(token) {
         console.error(e);
     }
     return fullAlbumList;
+}
+
+export async function getProfileData(accessToken) {
+    try {
+        const profData = await fetch(`https://api.spotify.com/v1/me`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            }
+        })
+        .then(response => response.json())
+        return profData;
+    }
+    catch(e) {
+        console.error('There was an issue getting users profile data', e);
+    }
 }

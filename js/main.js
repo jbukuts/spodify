@@ -1,8 +1,16 @@
-import { createPlayer, getUsersAlbumsSpotify } from './spotify.js';
+import { createPlayer, getUsersAlbumsSpotify, getProfileData } from './spotify.js';
 import { playSong } from './scrub.js';
 import { createPageFromArray } from './helper.js';
 import { MENUS } from './templates.js';
 import { SpotifyData } from './classes/spotify-data.js';
+import {testAPI, testMusicMatch } from './genius.js';
+import conf from './conf/conf.json' assert { type: "json" };
+
+async function test() {
+    // console.log(await testMusicMatch());
+    // console.log(await testAPI('Grimy Waifu','JPEGMAFIA'));
+}
+test();
 
 // stack of menu titles
 let titleText = ['iPod'];
@@ -17,15 +25,12 @@ const menu = document.getElementsByClassName('menu')[0];
 const screen = document.getElementById('screen');
 const loginButton = document.getElementById('btn-login');
 
-let fullAlbumList = [];
-let fullSongList = [];
-
 const spotifyData = new SpotifyData();
 
 // log the user in and get their  access token
 function login(callback) {
     var CLIENT_ID = '0981792b5bc94457a102687309d0beb6';
-    var REDIRECT_URI = 'https://jbukuts.com/spodify/proxy.html';
+    var REDIRECT_URI = `${conf.host}${conf.redirectPath}`;
     function getLoginURL(scopes) {
         return 'https://accounts.spotify.com/authorize?client_id=' + CLIENT_ID +
           '&redirect_uri=' + encodeURIComponent(REDIRECT_URI) +
@@ -66,25 +71,72 @@ loginButton.addEventListener('click', function() {
     login(async function(accessToken) {
         // this is the callback
         window.document.removeEventListener("message", this, false);
-        
         localStorage.setItem('access_token', accessToken);
-        document.getElementById('screen').style.display = 'block';
-        loginButton.style.display = 'none';
+        spotifyData.setAccessToken(accessToken);
+
+        loginButton.style.opacity = 0;
 
         // get the full catalog for the user
-        const usersAlbumData = await getUsersAlbumsSpotify(accessToken);
-        fullAlbumList = usersAlbumData;
-        createPlayer(accessToken);
+        getUsersAlbumsSpotify(accessToken).then(async allAlbums => {
+            spotifyData.setAllData(allAlbums);
 
-        // test object
-        spotifyData.setAccessToken(accessToken);
-        spotifyData.setAllData(usersAlbumData);
+            MENUS.songs = spotifyData.getSongs();
+            MENUS.albums = spotifyData.getAblums();
+            MENUS.artists = spotifyData.getArtists();
+            createPlayer(accessToken);
 
-        MENUS.songs = spotifyData.getSongs();
-        MENUS.albums = spotifyData.getAblums();
-        MENUS.artists = spotifyData.getArtists();
+            MENUS.about = [
+                ...MENUS.about,
+                `<p>Songs ${MENUS.songs.length}</p>`,
+                `<p>Albums ${MENUS.albums.length}</p>`,
+                `<p>Artist ${MENUS.artists.length}</p>`
+            ]
+
+            document.documentElement.style.setProperty('--screen-state', 'flex');
+            new Promise(resolve => setTimeout(resolve, 1000)).then(() => {
+                document.documentElement.style.setProperty('--screen-opacity', '1');
+            });
+            
+            document.getElementById('login').style.display = 'none';
+        });
+
+        getProfileData(accessToken).then(profileData => {
+            console.log(profileData);
+            titleText[0] = `${profileData.display_name}'s iPod`;
+
+            MENUS.about = [
+                `<p>${titleText[0].toUpperCase()}</p>`,
+                `<p>Version ${conf.version}</p>`
+            ]
+        });
     });
 });
+
+// handles the search functionality
+const searchHandler = function(e) {
+    const input = e.target.value;
+    try {
+        // current pages nodes
+        const fullList = [...lines[lines.length-1].children];
+        if (fullList) {
+            // shift out of the search bar
+            fullList.shift();
+
+            // show all again
+            fullList.forEach((s) => s.style.display = 'block');
+
+            // query for those that dont match and hide
+            const regex = new RegExp(`^${input}[a-z]*`,'i');
+            fullList
+                .filter(i => !i.innerText.match(regex))
+                .forEach((s) => s.style.display = 'none');
+        }
+    }
+    catch(e) {
+        console.error('There was an issue with the search funcion', e);
+    }
+    
+}
 
 // will go back to previous page
 async function onTitleClick() {
@@ -120,6 +172,54 @@ async function onTitleClick() {
     }
 }
 
+document.addEventListener('go_to_item', (e) => {
+    const item =  e.detail.album ? e.detail.album : e.detail.artist;
+    onMenuClick({
+        target: {
+            textContent: item,
+            classList: e.detail.album ? ['album-item'] : ['artist-item']
+        }
+    });
+})
+
+async function shiftPageAmount(a) {
+    try {
+        // disable click events
+        screen.style['pointer-events'] = 'none';
+        title.style['pointer-events'] = 'none';
+
+        // update list
+        lines = Array.from(document.getElementsByClassName('lines'));
+
+        // cant go back
+        if (lines.length === 1) return;
+
+        titleText = titleText.splice(0, titleText.length - a);
+        title.innerHTML = titleText[titleText.length - 1];
+
+        // bring back one space
+        const multiplier = lines.length - a - 1;
+        lines.forEach(m => {m.style.transform = `translateX(calc(${-multiplier * 100}% - ${multiplier * 15}px))`;});
+        
+        // wait for animation to finish and delete element
+        await new Promise(resolve => setTimeout(resolve, animationTime));
+
+        const linesLenth = lines.length;
+        for (var i = titleText.length; i < linesLenth; i++) {
+            const temp = document.getElementsByClassName('lines');
+            temp[temp.length - 1].remove();
+        }
+        lines.splice(titleText.length, a);
+    }
+    catch(e) {
+        console.error(`There was an issue shifting the page ${a} times`);
+    }
+    finally {
+        screen.style['pointer-events'] = 'all';
+        title.style['pointer-events'] = titleText.length === 1 ? 'none' : 'all';
+    }
+}
+
 // responsible for shifting to new page
 async function onMenuClick(e) {
     try {
@@ -134,13 +234,22 @@ async function onMenuClick(e) {
             menuItems = spotifyData.getTracksForAlbum(e.target.textContent);
         }
         else if ([...e.target.classList].includes('artist-item')) {
-            menuItems = spotifyData.getAlbumsForArtist(e.target.textContent)
+            menuItems = spotifyData.getAlbumsForArtist(e.target.textContent);  
         }
         else {
             menuItems = MENUS[text];
         }
 
         if (!menuItems) throw new Error();
+
+        if (titleText.includes('Now Playing') && e.target.textContent === 'Now Playing') {
+            console.log('There is already a now playing!');
+            
+            const shiftAmount = lines.length - 1 - titleText.indexOf('Now Playing');
+            shiftPageAmount(shiftAmount);
+            playSong();
+            return;
+        }
 
         // keep track of menu title
         titleText.push(e.target.textContent);
@@ -149,11 +258,15 @@ async function onMenuClick(e) {
         const div = createPageFromArray(menuItems);
         await menu.append(div);
 
+        const search = document.getElementById('search');
+        if (search) search.addEventListener('input', searchHandler);
+
         // wait workaround
         await new Promise(resolve => setTimeout(resolve, 100));
 
         // do the transform
-        lines = Array.from(document.getElementsByClassName('lines'));
+        lines = [...document.getElementsByClassName('lines')];
+        console.log(lines);
         const multiplier = lines.length -1;
         lines.forEach(m => {
             m.style.transform = `translateX(calc(-${multiplier}00% - ${multiplier * 15}px))`;
@@ -208,7 +321,6 @@ async function onSongClick(e) {
 
 // set the listeners for menu items
 function setListeners() {
-    console.log('adding listeners');
     const menuElements = document.querySelectorAll('.lines > p.menu-item');
     const songElements = document.querySelectorAll('.lines > p.song-item');
 
@@ -222,13 +334,14 @@ function setListeners() {
 }
 
 // set listener for the title
-title.addEventListener('click', onTitleClick);
+title.addEventListener('click', async () => shiftPageAmount(1));
 
 // logic responsible for clock
 const timeOptions = { hour: '2-digit', minute: '2-digit' };
 function flipClock(showClock) {
     setTimeout(() => {
-        title.innerHTML = showClock ? new Date().toLocaleTimeString('en-US', timeOptions) : titleText[titleText.length - 1];
+        title.innerHTML = showClock ? 
+            new Date().toLocaleTimeString('en-US', timeOptions) : titleText[titleText.length - 1];
         flipClock(!showClock);
     }, 10000);
 }

@@ -7,6 +7,8 @@ const NOW_PLAYING = [
     "<h3 id=\"player-time\">0:00 -0:00</h3>"
 ];
 
+export const SEARCH_BOX = '<input type="text" id="search" name="search" placeholder="Search...">';
+
 // menu items
 export const MENUS = {
     music: [
@@ -23,11 +25,12 @@ export const MENUS = {
         '<p class="menu-item">Song Quiz</p>',
     ],
     settings: [
-        '<p class="menu-item">About</p>',
-        '<p class="menu-item">Gradient</p>',
+        '<p class="menu-item">About</p>'
     ],
     now_playing: NOW_PLAYING,
     albums: [],
     artists: [],
     songs: [],
+    about: []
 }
+

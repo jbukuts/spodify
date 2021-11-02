@@ -8,12 +8,19 @@
     src: url('../fonts/SF-Pro-Display-Regular.otf'); /*URL to font*/
 }
 
+@font-face {
+    font-family: 'AppleGaramond'; /*a name to be used later*/
+    src: url('../fonts/Garamond/AppleGaramond-Light.ttf'); /*URL to font*/
+}
+
 :root {
     --window-padding: 15px;
     --window-height: 300px;
     --window-width: 400px;
     --hr-margin: 2px;
     --slide-animation-time: 500ms;
+    --screen-state: none;
+    --screen-opacity: 0;
 }
 
 body {
@@ -26,6 +33,9 @@ hr {
     margin-top: var(--hr-margin);
     margin-bottom: calc(-1 * var(--hr-margin));
     border-top: 1px solid rgb(0, 0, 0);
+    display: var(--screen-state); 
+    opacity: var(--screen-opacity); 
+    transition: opacity var(--slide-animation-time) linear;
 }
 
 p {
@@ -65,8 +75,29 @@ p:hover {
     left: calc(50% - (var(--window-width)/2) - var(--window-padding));
     overflow-x: hidden;
     overflow-y: hidden;
-    display: none;
+
     transform: scale(1);
+}
+
+#screen::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 2;
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+    opacity: .15;
+}
+
+.top-bar {
+    display: var(--screen-state);
+    opacity: var(--screen-opacity);
+    transition: opacity var(--slide-animation-time) linear;
 }
 
 .menu {
@@ -75,6 +106,9 @@ p:hover {
     position: absolute;
     display: flex;
     flex-flow:row;
+    display: var(--screen-state);
+    opacity: var(--screen-opacity);
+    transition: opacity var(--slide-animation-time) linear;
 }
 
 .lines {
@@ -84,11 +118,12 @@ p:hover {
     height: 100%;
     position: relative;
     transition: transform var(--slide-animation-time);
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .lines > p:first-child {
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
 .lines > p {
@@ -126,6 +161,11 @@ p:hover {
     content: ">";
     position: absolute;
     right: 5px;
+}
+
+.lines > p.menu-item:hover::after {
+    color: white;
+    content: ">";
 }
 
 .lines > .song-item {
@@ -190,6 +230,7 @@ p:hover {
 
 #scrub:hover {
     border-radius: 0px;
+    cursor: pointer;
 }
 
 #song-title, #artist, #album, #player-time {
@@ -198,6 +239,10 @@ p:hover {
     font-weight: normal;
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+#artist:hover, #album:hover {
+    cursor: pointer;
 }
 
 #song-title, #artist, #album {
@@ -219,7 +264,7 @@ p:hover {
 }
 
 #song-title {
-    margin-top: 65px;
+    margin-top: 60px;
 }
 
 /** footer text **/
@@ -250,13 +295,60 @@ h5 {
 }
 
 /** login button **/
-#btn-login {
+#login {
+    width: 100%;
+    height: 100%;
+    text-align: center;
     position: absolute;
-    width: 200px;
-    height: 100px;
+    width: fit-content;
+    height: fit-content;
     left: 0;
     right: 0;
     top: 0;
     bottom: 0;
     margin: auto;
+    padding: 10px;
+    z-index: 999;
+}
+
+/** login button **/
+#login > h3 {
+    font-size: 72px;
+    font-family: 'AppleGaramond' !important;
+    margin: 15px;
+    letter-spacing: .2rem;
+}
+
+#btn-login {
+    width: fit-content;
+    height: fit-content;
+    background: rgba(0, 0, 0, 0.0);
+    border: 0px;
+    font-family: 'AppleGaramond';
+    font-size: 56px;
+    transition: opacity var(--slide-animation-time) linear;
+    padding: 5px 15px 5px 15px;
+}
+
+#btn-login:hover {
+    border: 1px black solid;
+}
+
+#btn-login:hover {
+    cursor: pointer;
+}
+
+#search {
+    font-family: 'ChicagoFLF';
+    width: 100%;
+    font-size: 20px;
+    border: 0px;
+    margin-top: 6px;
+    padding-left: 5px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+#search:focus {
+    outline: none;
 }

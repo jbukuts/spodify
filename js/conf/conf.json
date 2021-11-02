@@ -1,0 +1,5 @@
+{
+    "version": "0.2",
+    "host": "http://localhost:35729",
+    "redirectPath": "/proxy.html"
+}

@@ -1,22 +1,20 @@
+import { getRandomInt } from './helper.js';
+
 let last = 0;
 let changeSpeed = 1500;
 let rAF;
 const blobs = [...document.getElementsByClassName("blob")];
+const min = 0;
+const max = 1000000;
 
-
-const random = () => {
-    return Math.floor((Math.random() * 1000000));
-};
-
-console.log('BLOB TIME', blobs);
 function render(now) {
     if (!last || now - last >= changeSpeed) {
       last = now;
       blobs.forEach(blob => {
-        blob.style.borderTopLeftRadius = `${random()}px ${random()}px`;
-        blob.style.borderTopRightRadius = `${random()}px ${random()}px`;
-        blob.style.borderBottomLeftRadius = `${random()}px ${random()}px`;
-        blob.style.borderBottomRightRadius = `${random()}px ${random()}px`;
+        blob.style.borderTopLeftRadius = `${getRandomInt(min, max)}px ${getRandomInt(min, max)}px`;
+        blob.style.borderTopRightRadius = `${getRandomInt(min, max)}px ${getRandomInt(min, max)}px`;
+        blob.style.borderBottomLeftRadius = `${getRandomInt(min, max)}px ${getRandomInt(min, max)}px`;
+        blob.style.borderBottomRightRadius = `${getRandomInt(min, max)}px ${getRandomInt(min, max)}px`;
       });
     }
     rAF = requestAnimationFrame(render);

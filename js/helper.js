@@ -20,3 +20,18 @@ export function getRandomInt(min, max) {
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min) + min);
 }
+
+export function createTimeString(duration, currentTime) {
+
+    // current time
+    const curMin = Math.floor(currentTime / 60);
+    const curSec = Math.floor(currentTime - curMin * 60);
+    const currStr = `${curMin}:${String(curSec).padStart(2,'0')}`;
+
+    // time left
+    const lefMin = Math.floor((duration - currentTime) / 60);
+    const lefSec = Math.floor((duration - currentTime) - lefMin * 60);
+    const lefStr = `-${lefMin}:${String(lefSec).padStart(2,'0')}`;
+
+    return `${currStr} ${lefStr}`;
+}

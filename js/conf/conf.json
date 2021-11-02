@@ -1,5 +1,5 @@
 {
     "version": "0.2",
-    "host": "https://jbukuts.com/spodify/",
+    "host": "https://jbukuts.com/spodify",
     "redirectPath": "/proxy.html"
 }

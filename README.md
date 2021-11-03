@@ -11,8 +11,8 @@ To install:
 
 ### TODO
 - Fix Queue logic to not be overload
-- Make scrubing cleaner
-- Add search
+~~- Make scrubing cleaner~~
+~~- Add search~~
 - Add Playlists menu
 - Use profile API endpoint to show user data
 - Add album artwork

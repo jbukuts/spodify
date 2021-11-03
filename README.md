@@ -14,7 +14,7 @@ To install:
 ~~- Make scrubing cleaner~~
 ~~- Add search~~
 - Add Playlists menu
-- Use profile API endpoint to show user data
+~~- Use profile API endpoint to show user data~~
 - Add album artwork
 
 

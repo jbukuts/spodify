@@ -1,16 +1,18 @@
 import { createPalette } from './palette/palette.js';
 import { getRandomInt, createTimeString } from './helper.js';
+import { MENUS } from './templates.js';
 
 Number.prototype.clamp = function(min, max) {
     return Math.min(Math.max(this, min), max);
 };
 
 const blobs = [...document.getElementsByClassName("blob")];
+const shuffleButton = document.getElementById('shuffleButton');
 
 var currentVolume = .1;
 
-const pauseBtn = `<polygon fill="black" points="0,0 0,26 8,26 8,0"></polygon><polygon fill="black" points="16,0 16,26 24,26 24,0"></polygon>`;
-const playBtn = `<polygon fill="black" points="0,0 0,28 26,14"></polygon>`;
+const pauseBtn = `./assets/icons/pause.svg`;
+const playBtn = `./assets/icons/play.svg`;
 
 
 export function createPlayer(token) {
@@ -62,6 +64,11 @@ export function createPlayer(token) {
                         player.togglePlay();
                 }
             });
+
+            shuffleButton.onclick = function() {
+                const currentShuffle = shuffleButton.style.opacity === '1';
+                setUsersPlayback(token, !currentShuffle, device_id);
+            };
         });
     
         // Not Ready
@@ -82,16 +89,33 @@ export function createPlayer(token) {
         });
 
         // update the current track when needed
-        player.addListener('player_state_changed', (state) => {
-            //console.log(state.track_window);
-            const stateTrack = state.track_window.current_track;
+        player.addListener('player_state_changed', ({ track_window: { current_track }, shuffle, paused, duration, position }) => {
+            // console.log('there was a change', state);
+            const stateTrack = current_track;
             const storedTrack = JSON.parse(localStorage.getItem('current_song'));
-            document.getElementById('playButton').innerHTML = state.paused ? playBtn : pauseBtn;
+            document.getElementById('playButton').src = paused ? playBtn : pauseBtn;
+
+            shuffleButton.style.opacity = shuffle ? '1' : '.25';
             
             if (stateTrack && storedTrack && stateTrack.id !== storedTrack.id) {
                 localStorage.setItem('current_song', JSON.stringify(stateTrack));
                 const imageURL = stateTrack.album.images[0].url;
-                //console.log(imageURL);
+                console.log(MENUS);
+
+                const songNumber = document.getElementById('song-number');
+                drawNowPlayingMenu({ track_window: { current_track: stateTrack }});
+                drawNowPlayingScrub({ duration, position });
+
+                if (songNumber) {
+                    console.log(current_track);
+
+                    getCurrentlyPlaying(token).then(c => {
+                        getAlbumById(c.item.album.id, token).then(a => {
+                            const trackIndex = a.tracks.items.findIndex((t) => t.uri === current_track.uri);
+                            songNumber.innerHTML = `${trackIndex + 1} of ${a.tracks.items.length}`;
+                        })
+                    });
+                }
 
                 // get the palette
                 createPalette(imageURL, 10, 16).then(r => { 
@@ -124,13 +148,24 @@ export function createPlayer(token) {
             player.pause();
         });
 
-        const drawToNowPlaying = async () => {
-            const scrubBar = document.getElementById('scrub-bar');
-            const playState = await player.getCurrentState();
+        const drawNowPlayingMenu = (playState) => {
+            // console.log(playState);
             const currentPlaying = playState.track_window.current_track;
             document.getElementById('song-title').innerHTML = currentPlaying.name;
             document.getElementById('artist').innerHTML = currentPlaying.artists[0].name;
             document.getElementById('album').innerHTML = currentPlaying.album.name;
+
+            const songNumber = document.getElementById('song-number');
+            getCurrentlyPlaying(token).then(c => {
+                getAlbumById(c.item.album.id, token).then(a => {
+                    const trackIndex = a.tracks.items.findIndex((t) => t.uri === currentPlaying.uri) + 1;
+                    songNumber.innerHTML = `${trackIndex} of ${a.tracks.items.length}`;
+                })
+            });
+        }
+
+        const drawNowPlayingScrub = (playState) => {
+            const scrubBar = document.getElementById('scrub-bar');
 
             // get vals from player
             const duration = playState.duration / 1000;
@@ -156,42 +191,36 @@ export function createPlayer(token) {
             };
             
             // draw elements
-            drawToNowPlaying();
+            player.getCurrentState().then(playState => drawNowPlayingMenu(playState));
         });
     
         // toggle player
         document.getElementById('playButton').onclick = function() {
-          player.togglePlay();
+            player.togglePlay();
         };
 
         // get the state every second to update the player
-        const getSpotifyPlayerState = (player) => {
+        const getSpotifyPlayerState = () => {
             setTimeout(async () => {
-
                 const scrubBar = document.getElementById('scrub-bar');
                 if (scrubBar) {
                     try {
-                        const playState = await player.getCurrentState();
-                        const currentPlaying = playState.track_window.current_track;
-
-                        document.getElementById('song-title').innerHTML = currentPlaying.name;
-                        document.getElementById('artist').innerHTML = currentPlaying.artists[0].name;
-                        document.getElementById('album').innerHTML = currentPlaying.album.name;
-
-                        if (!playState.paused) {
-                            drawToNowPlaying();
-                        }
+                        player.getCurrentState().then(playState => {
+                            if (!playState.paused) {
+                                drawNowPlayingScrub(playState);
+                            }
+                        });
                     }
                     catch(e) {
                         console.error('there was an issue seeking', e);
                     }
                     
                 }
-                getSpotifyPlayerState(player);
+                getSpotifyPlayerState();
             }, 1000);
         };
 
-        getSpotifyPlayerState(player);
+        getSpotifyPlayerState();
         player.connect();
     }
 }
@@ -257,4 +286,52 @@ export async function getProfileData(accessToken) {
     catch(e) {
         console.error('There was an issue getting users profile data', e);
     }
+}
+
+export async function getAlbumById(albumId, accessToken) {
+    try {
+        return fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            }
+        }).then(r => r.json());
+    }
+    catch(e) {
+        console.log('Error getting album by Id', e);
+    }
+}
+
+export function getCurrentlyPlaying(accessToken) {
+    try {
+        return fetch(`https://api.spotify.com/v1/me/player/currently-playing`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            }
+        }).then(r => r.json());
+    }
+    catch(e) {
+        console.log('Error getting album by Id', e);
+    }
+}
+
+export async function setUsersPlayback(accessToken, state, deviceId) {
+    try {
+        await fetch(`https://api.spotify.com/v1/me/player/shuffle?state=${state}&device_id=${deviceId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+    }
+    catch(e) {
+        console.error('Failed to set users shuffle', e);
+    }    
 }

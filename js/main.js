@@ -103,6 +103,7 @@ loginButton.addEventListener('click', function() {
         getProfileData(accessToken).then(profileData => {
             console.log(profileData);
             titleText[0] = `${profileData.display_name}'s iPod`;
+            document.title = titleText[0];
 
             MENUS.about = [
                 `<p>${titleText[0].toUpperCase()}</p>`,

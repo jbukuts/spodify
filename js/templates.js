@@ -1,5 +1,6 @@
 // important elements to create
-const NOW_PLAYING = [
+export let NOW_PLAYING = [
+    "<h3 id=\"song-number\">1 of 99</h3>",
     "<h3 id=\"song-title\"></h3>",
     "<h3 id=\"artist\"></h3>",
     "<h3 id=\"album\"></h3>",

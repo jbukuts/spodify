@@ -1,7 +1,7 @@
 import { createPlayer, getUsersAlbumsSpotify, getProfileData } from './spotify.js';
 import { playSong } from './scrub.js';
 import { createPageFromArray } from './helper.js';
-import { MENUS } from './templates.js';
+import { MENUS, NOW_PLAYING } from './templates.js';
 import { SpotifyData } from './classes/spotify-data.js';
 import {testAPI, testMusicMatch } from './genius.js';
 import conf from './conf/conf.json' assert { type: "json" };
@@ -138,40 +138,6 @@ const searchHandler = function(e) {
     
 }
 
-// will go back to previous page
-async function onTitleClick() {
-    try {
-        // disable click events
-        screen.style['pointer-events'] = 'none';
-        title.style['pointer-events'] = 'none';
-
-        // update list
-        lines = Array.from(document.getElementsByClassName('lines'));
-
-        // cant go back
-        if (lines.length === 1) return;
-
-        // keep track of menu title
-        titleText.pop();
-        title.innerHTML = titleText[titleText.length -1];
-        
-        // bring back one space
-        const multiplier = lines.length - 2;
-        lines.forEach(m => {m.style.transform = `translateX(calc(${-multiplier * 100}% - ${multiplier * 15}px))`;});
-        // wait for animation to finish and delete element
-        await new Promise(resolve => setTimeout(resolve, animationTime));
-        document.getElementsByClassName('lines')[lines.length - 1].remove();
-        lines.splice(lines.length - 1, 1);
-    }
-    catch(e) {
-        console.error('There was an error going back', e);
-    }
-    finally {
-        screen.style['pointer-events'] = 'all';
-        title.style['pointer-events'] = titleText.length === 1 ? 'none' : 'all';
-    }
-}
-
 document.addEventListener('go_to_item', (e) => {
     const item =  e.detail.album ? e.detail.album : e.detail.artist;
     onMenuClick({
@@ -180,7 +146,7 @@ document.addEventListener('go_to_item', (e) => {
             classList: e.detail.album ? ['album-item'] : ['artist-item']
         }
     });
-})
+});
 
 async function shiftPageAmount(a) {
     try {
@@ -266,7 +232,6 @@ async function onMenuClick(e) {
 
         // do the transform
         lines = [...document.getElementsByClassName('lines')];
-        console.log(lines);
         const multiplier = lines.length -1;
         lines.forEach(m => {
             m.style.transform = `translateX(calc(-${multiplier}00% - ${multiplier * 15}px))`;
@@ -289,15 +254,23 @@ async function onMenuClick(e) {
 
 // will play song and shift to now playing
 async function onSongClick(e) {
+    const songList = Array.from(lines[lines.length - 1]
+        .getElementsByTagName('p'))
+        .map(s => s.id);
 
-    const songList = Array.from(lines[lines.length - 1].getElementsByTagName('p')).map(s => s.id);
     const currentSongIndex = songList.findIndex(i => e.target.id === i);
-    const songQueue = songList.slice(currentSongIndex).concat(songList.slice(0,currentSongIndex));
+    const albumURI = spotifyData.findAlbumBySongID(e.target.id);
+
+    // NOW_PLAYING[0] = "<h3 id=\"song-number\">test</h3>";
+    // MENUS.now_playing = ["<h3 id=\"song-number\">test</h3>"];
 
     const data = {
-        "uris": songQueue,
-        "position_ms": 0
-    }
+        context_uri: albumURI,
+        offset: {
+            position: currentSongIndex
+        },
+        position_ms: 0
+    };
 
     // play the song
     await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${localStorage.getItem('device_id')}`, {

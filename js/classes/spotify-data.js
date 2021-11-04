@@ -21,9 +21,9 @@ export class SpotifyData {
 
     getAblums() {
         const albumData = this.allData 
-            .map(i => i.album.name)
-            .sort((a, b) => (`${a.toLowerCase()}`.localeCompare(b.toLowerCase())))
-            .map(a => `<p class="menu-item album-item">${a}</p>`);
+            .map(i => {return { name: i.album.name, id: i.album.id }})
+            .sort((a, b) => (`${a.name.toLowerCase()}`.localeCompare(b.name.toLowerCase())))
+            .map(a => `<p class="menu-item album-item" id="${a.id}">${a.name}</p>`);
         albumData.unshift(SEARCH_BOX);
         return albumData;
     }
@@ -56,6 +56,13 @@ export class SpotifyData {
             .filter(x => x.album.artists[0].name === artistName)
             .sort((a, b) => (`${a.album.name}`.localeCompare(b.album.name)))
             .map(a => `<p class="menu-item album-item">${a.album.name}</p>`);
+    }
+
+    findAlbumBySongID(songURI) {
+        const { album: { uri }} = this.allData.find(album => {
+            return album.album.tracks.items.find(track => track.uri === songURI);
+        });
+        return uri;
     }
 
     getTracksForAlbum(albumName) {

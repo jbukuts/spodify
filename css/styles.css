@@ -98,6 +98,8 @@ p:hover {
     display: var(--screen-state);
     opacity: var(--screen-opacity);
     transition: opacity var(--slide-animation-time) linear;
+    align-items: center;
+    justify-content: center;
 }
 
 .menu {
@@ -175,14 +177,22 @@ p:hover {
     display: block;
 }
 
-#playButton {
-    height: 32px;
-    width:38px;
-    position: absolute;
-    transform:scale(.5);
+
+.top-bar-buttons {
+    position: relative;
+    margin-right: 7px;
+    margin-left: 7px;
 }
 
-#playButton:hover {
+#playButton {
+    height: 15px;
+}
+
+#shuffleButton {
+    height: 20px;
+}
+
+.top-bar-buttons:hover {
     cursor: pointer;
 }
 
@@ -233,12 +243,16 @@ p:hover {
     cursor: pointer;
 }
 
-#song-title, #artist, #album, #player-time {
+#song-title, #artist, #album, #player-time, #song-number {
     text-align: center;
     -webkit--webkit-font-smoothing: none;
     font-weight: normal;
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+#song-number {
+    text-align: left;
 }
 
 #artist:hover, #album:hover {
@@ -264,7 +278,7 @@ p:hover {
 }
 
 #song-title {
-    margin-top: 60px;
+    margin-top: 35px;
 }
 
 /** footer text **/

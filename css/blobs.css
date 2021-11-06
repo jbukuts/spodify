@@ -21,6 +21,7 @@
     z-index: -1;
     top: 0;
     backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
 }
 
 .blob {

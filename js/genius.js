@@ -8,9 +8,9 @@ export async function testAPI(songTitle, artistName) {
     }).then(r => r.json());
 }
 
-export async function testMusicMatch() {
-    return fetch(`http://api.musixmatch.com/ws/1.1/track.lyrics.get?apikey=019e8ab04d8e50cb6c95126cbdc81922&track_id=15953433&`, {
-        method: 'GET',
-        mode: 'no-cors'
+export async function testReadingPage() {
+    const link = 'https://genius.com/Jpegmafia-grimy-waifu-lyrics';
+    $.get("middleman.php", {"site":"http://www.google.com"}, function(results){
+        console.log(results); // middleman gives Google's HTML to jQuery
     });
 }

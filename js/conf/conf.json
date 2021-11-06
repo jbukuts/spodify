@@ -1,5 +1,19 @@
 {
     "version": "0.2",
     "host": "http://localhost:35729",
-    "redirectPath": "/proxy.html"
+    "redirectPath": "/proxy.html",
+    "baseAPIURL": "https://api.spotify.com/v1",
+    "apiHeaders": {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    },
+    "spotifyPermissions": [
+        "user-read-email",
+        "user-library-read",
+        "streaming",
+        "user-read-private",
+        "user-modify-playback-state",
+        "user-read-currently-playing",
+        "user-read-playback-state"
+    ]
 }

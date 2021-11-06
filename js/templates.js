@@ -13,25 +13,33 @@ export const SEARCH_BOX = '<input type="text" id="search" name="search" placehol
 // menu items
 export const MENUS = {
     music: [
+        '<p class="menu-item disabled">Recently Played</p>',
         '<p class="menu-item">Artists</p>',
         '<p class="menu-item">Albums</p>',
-        '<p class="menu-item">Songs</p>'
+        '<p class="menu-item disabled">Songs</p>',
+        '<p class="menu-item disabled">Playlists</p>',
+        '<p class="menu-item disabled">Search</p>'
     ],
     extras: [
         '<p class="menu-item">Games</p>',
-        '<p class="menu-item">Clock</p>',
+        '<p class="menu-item disabled">Clock</p>',
     ],
     games: [
         '<p class="menu-item">Snake</p>',
-        '<p class="menu-item">Song Quiz</p>',
+        '<p class="menu-item disabled">Song Quiz</p>',
     ],
     settings: [
-        '<p class="menu-item">About</p>'
+        '<p class="menu-item">About</p>',
+        '<p class="menu-item disabled">Info</p>',
+        '<p class="disabled">Logout</p>'
     ],
     now_playing: NOW_PLAYING,
     albums: [],
     artists: [],
     songs: [],
-    about: []
+    about: [],
+    snake: [
+        '<canvas id="snake" width="400" height="260"></canvas>',
+    ]
 }
 

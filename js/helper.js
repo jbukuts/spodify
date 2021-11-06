@@ -35,3 +35,8 @@ export function createTimeString(duration, currentTime) {
 
     return `${currStr} ${lefStr}`;
 }
+
+
+export function createHTMLFromInput(data, classNames) {
+    return data.map(s => `<p data-uri="${s.uri}" class="${classNames.reduce((a,c) => `${a} ${c}`, '')}">${s.name}</p>`);
+}

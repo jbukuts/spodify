@@ -1,14 +1,14 @@
-import { createPlayer, getUsersAlbumsSpotify, getProfileData } from './spotify.js';
-import { playSong } from './scrub.js';
-import { createPageFromArray } from './helper.js';
-import { MENUS, NOW_PLAYING } from './templates.js';
+import { createPlayer } from './spotify.js';
+import { createPageFromArray, createHTMLFromInput } from './helper.js';
+import { MENUS, SEARCH_BOX } from './templates.js';
 import { SpotifyData } from './classes/spotify-data.js';
-import {testAPI, testMusicMatch } from './genius.js';
+import { testReadingPage} from './genius.js';
 import conf from './conf/conf.json' assert { type: "json" };
+import { getUsersAlbumsSpotify, getProfileData, getCurrentlyPlaying } from './client-api-calls.js';
 
 async function test() {
-    // console.log(await testMusicMatch());
     // console.log(await testAPI('Grimy Waifu','JPEGMAFIA'));
+    console.log(await testReadingPage());
 }
 test();
 
@@ -38,15 +38,7 @@ function login(callback) {
           '&response_type=token';
     }
     
-    var url = getLoginURL([
-        'user-read-email',
-        'user-library-read',
-        'streaming',
-        'user-read-private',
-        'user-modify-playback-state',
-        'user-read-currently-playing',
-        'user-read-playback-state'
-    ]);
+    var url = getLoginURL(conf.spotifyPermissions);
     
     var width = 450,
         height = 730,
@@ -67,6 +59,7 @@ function login(callback) {
     );
 }
 
+// on login click prompt the user for auth
 loginButton.addEventListener('click', function() {
     login(async function(accessToken) {
         // this is the callback
@@ -80,9 +73,10 @@ loginButton.addEventListener('click', function() {
         getUsersAlbumsSpotify(accessToken).then(async allAlbums => {
             spotifyData.setAllData(allAlbums);
 
-            MENUS.songs = spotifyData.getSongs();
-            MENUS.albums = spotifyData.getAblums();
-            MENUS.artists = spotifyData.getArtists();
+            MENUS.albums = createHTMLFromInput(spotifyData.getAlbums(), ['menu-item','album-item']);
+            MENUS.songs = createHTMLFromInput(spotifyData.getSongs(), ['song-item']);
+            MENUS.artists = createHTMLFromInput(spotifyData.getArtists(), ['menu-item','artist-item']);
+            
             createPlayer(accessToken);
 
             MENUS.about = [
@@ -90,7 +84,11 @@ loginButton.addEventListener('click', function() {
                 `<p>Songs ${MENUS.songs.length}</p>`,
                 `<p>Albums ${MENUS.albums.length}</p>`,
                 `<p>Artist ${MENUS.artists.length}</p>`
-            ]
+            ];
+
+            MENUS.albums.unshift(SEARCH_BOX);
+            MENUS.songs.unshift(SEARCH_BOX);
+            MENUS.artists.unshift(SEARCH_BOX);
 
             document.documentElement.style.setProperty('--screen-state', 'flex');
             new Promise(resolve => setTimeout(resolve, 1000)).then(() => {
@@ -100,6 +98,7 @@ loginButton.addEventListener('click', function() {
             document.getElementById('login').style.display = 'none';
         });
 
+        // get the profile data for the user to save to the menus
         getProfileData(accessToken).then(profileData => {
             console.log(profileData);
             titleText[0] = `${profileData.display_name}'s iPod`;
@@ -136,19 +135,23 @@ const searchHandler = function(e) {
     catch(e) {
         console.error('There was an issue with the search funcion', e);
     }
-    
 }
 
+// go to artist/album from now playing
 document.addEventListener('go_to_item', (e) => {
     const item =  e.detail.album ? e.detail.album : e.detail.artist;
     onMenuClick({
         target: {
-            textContent: item,
+            textContent: e.detail.heading,
+            dataset: {
+                uri: item
+            },
             classList: e.detail.album ? ['album-item'] : ['artist-item']
         }
     });
 });
 
+// shifting a page back by x amount
 async function shiftPageAmount(a) {
     try {
         // disable click events
@@ -193,15 +196,65 @@ async function onMenuClick(e) {
         // disable click events
         screen.style['pointer-events'] = 'none';
 
+        // if already exist go to it
+        if (titleText.includes(e.target.textContent)) {
+            console.log('There is already a now playing!');
+            
+            const shiftAmount = lines.length - 1 - titleText.indexOf(e.target.textContent);
+            shiftPageAmount(shiftAmount);
+            // playSong();
+            document.dispatchEvent(new CustomEvent('show_now_playing'));
+            return;
+        }
+
         // what is the next menu
         const text = e.target.textContent.toLowerCase().replaceAll(' ', '_');
-        
+        let titleHead = e.target.textContent;
+
         var menuItems = undefined;
         if ([...e.target.classList].includes('album-item')) {
-            menuItems = spotifyData.getTracksForAlbum(e.target.textContent);
+            console.log(e.target.dataset.uri);
+            const albumJSON = spotifyData.getTracksForAlbum(e.target.dataset.uri);
+            menuItems = createHTMLFromInput(albumJSON, ['song-item']);
+
+            console.log(albumJSON);
+            
+            // if currently playing append the speaker icons
+            await getCurrentlyPlaying(spotifyData.getAccessToken()).then(r => {
+                const { item: {uri, name, track_number, album: { uri: albumURI } }} = r;
+                if (albumURI === e.target.dataset.uri) {
+                    console.log('this is same album', track_number);
+                    const volumeIcon = '<i class="fas fa-volume-up"></i>';
+                    menuItems[track_number-1] = `<p data-uri="${uri}" class="song-item currently-playing">${name} ${volumeIcon}</p>`;
+                }
+            });
         }
         else if ([...e.target.classList].includes('artist-item')) {
-            menuItems = spotifyData.getAlbumsForArtist(e.target.textContent);  
+            const albumForArtistJSON = spotifyData.getAlbumsForArtist(e.target.textContent)
+            menuItems = createHTMLFromInput(albumForArtistJSON,['menu-item','album-item']);
+
+            // go straight to alubm for artists with single album
+            if (menuItems.length === 1) {
+                console.log(menuItems[0]);
+                const matchURI = menuItems[0].match(/data-uri="[a-z]*:[a-z]*:([a-z]|[0-9])*"/ig);
+                const matchTitle = menuItems[0].match(/>.*</ig);
+                if (matchURI && matchTitle) {
+                    titleHead = matchTitle[0].substring(1,matchTitle[0].length-1);
+                    const uriFromList = matchURI[0].substring(10, matchURI[0].length-1);
+
+                    menuItems = createHTMLFromInput(spotifyData.getTracksForAlbum(uriFromList),['song-item']);
+
+                    // if currently playing append the speaker icons
+                    await getCurrentlyPlaying(spotifyData.getAccessToken()).then(r => {
+                        const { item: {uri, name, track_number, album: { uri: albumURI } }} = r;
+                        if (albumURI === uriFromList) {
+                            console.log('this is same album', track_number);
+                            const volumeIcon = '<i class="fas fa-volume-up"></i>';
+                            menuItems[track_number-1] = `<p data-uri="${uri}" class="song-item currently-playing">${name} ${volumeIcon}</p>`;
+                        }
+                    });
+                } 
+            }
         }
         else {
             menuItems = MENUS[text];
@@ -209,17 +262,8 @@ async function onMenuClick(e) {
 
         if (!menuItems) throw new Error();
 
-        if (titleText.includes('Now Playing') && e.target.textContent === 'Now Playing') {
-            console.log('There is already a now playing!');
-            
-            const shiftAmount = lines.length - 1 - titleText.indexOf('Now Playing');
-            shiftPageAmount(shiftAmount);
-            playSong();
-            return;
-        }
-
         // keep track of menu title
-        titleText.push(e.target.textContent);
+        titleText.push(titleHead);
         title.innerHTML = titleText[titleText.length -1];
         
         const div = createPageFromArray(menuItems);
@@ -238,8 +282,11 @@ async function onMenuClick(e) {
             m.style.transform = `translateX(calc(-${multiplier}00% - ${multiplier * 15}px))`;
         });
 
+        
         if (text === 'now_playing')
-            playSong();
+            document.dispatchEvent(new CustomEvent('show_now_playing'));
+        else if (menuItems[0] === MENUS.snake[0])
+            loadSnake();
 
         // new listeners for new menu
         setListeners();
@@ -255,34 +302,37 @@ async function onMenuClick(e) {
 
 // will play song and shift to now playing
 async function onSongClick(e) {
-    const songList = Array.from(lines[lines.length - 1]
-        .getElementsByTagName('p'))
-        .map(s => s.id);
 
-    const currentSongIndex = songList.findIndex(i => e.target.id === i);
-    const albumURI = spotifyData.findAlbumBySongID(e.target.id);
+    if (!e.target.classList.contains('currently-playing')) {
+        const songList = Array.from(lines[lines.length - 1]
+            .getElementsByTagName('p'))
+            .map(s => s.dataset.uri);
+    
+        const currentSongIndex = songList.findIndex(i => e.target.dataset.uri === i);
+        const albumURI = spotifyData.findAlbumBySongID(e.target.dataset.uri);
+    
+        // NOW_PLAYING[0] = "<h3 id=\"song-number\">test</h3>";
+        // MENUS.now_playing = ["<h3 id=\"song-number\">test</h3>"];
+    
+        const data = {
+            context_uri: albumURI,
+            offset: {
+                position: currentSongIndex
+            },
+            position_ms: 0
+        };
 
-    // NOW_PLAYING[0] = "<h3 id=\"song-number\">test</h3>";
-    // MENUS.now_playing = ["<h3 id=\"song-number\">test</h3>"];
-
-    const data = {
-        context_uri: albumURI,
-        offset: {
-            position: currentSongIndex
-        },
-        position_ms: 0
-    };
-
-    // play the song
-    await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${localStorage.getItem('device_id')}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${spotifyData.getAccessToken()}`
-        },
-        body: JSON.stringify(data)
-    });
+        // play the song
+        await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${localStorage.getItem('device_id')}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${spotifyData.getAccessToken()}`
+            },
+            body: JSON.stringify(data)
+        });
+    }
 
     const falseEvent = {
         target: {
@@ -323,3 +373,11 @@ function flipClock(showClock) {
 // initial calls
 setListeners();
 flipClock(false);
+
+// loads the snake game
+function loadSnake() {
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = "./js/snake.js."; 
+    document.getElementsByTagName("head")[0].appendChild(script);
+}

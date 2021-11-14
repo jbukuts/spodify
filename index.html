@@ -6,6 +6,10 @@
         <link rel="stylesheet" href="./css/blobs.css">
         <script type="module" src="./js/blob.js"></script>
         <script type="module" src="./js/main.js"></script>
+        <script type="module" src="./js/backlight.js"></script>
+        <script type="module" src="./js/components/album-art.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src='https://kit.fontawesome.com/a076d05399.js' crossorigin='anonymous'></script>
     </head>
 
     <body>
@@ -14,6 +18,7 @@
                 <img class="top-bar-buttons" id="playButton"></img>
                 <p id="title">iPod</p>
                 <img class="top-bar-buttons" id="shuffleButton" src="./assets/icons/shuffle.svg" style="opacity: 1;"></img>
+                <img class="top-bar-buttons" id="repeatButton" src="./assets/icons/repeat.svg" style="opacity: 1;"></img>
             </div>
             <hr>
             <div id="login">
@@ -24,12 +29,14 @@
                     <p class="menu-item">Music</p>
                     <p class="menu-item">Extras</p>
                     <p class="menu-item">Settings</p>
-                    <p>Shuffle Songs</p>
-                    <p>Backlight</p>
+                    <p class="disabled">Shuffle Songs</p>
+                    <p id="backlight" class="disabled">Backlight</p>
                     <p class="menu-item">Now Playing</p>
                 </div>
             </div>
         </div>
+
+        <img id="album-art" alt="No Art"/>
 
         <div id="glass"></div>
         <div id="bounce">
@@ -58,7 +65,7 @@
             </div>
 
             <div class='x'>
-                <div class='y3 blob' style="background: rgba(122, 122, 122, 0)"></div>
+                <div class='y3 blob' style="background: rgba(105, 105, 105, 0.336)"></div>
             </div>
 
             <div class='x2'>
@@ -66,6 +73,6 @@
             </div>       
         </div>
 
-        <h5>Written by Jake Bukuts</h5>
+        <h5 id="my-name">Created by Jake Bukuts</h5>
     </body>
 </html>

@@ -21,12 +21,20 @@
     --slide-animation-time: 500ms;
     --screen-state: none;
     --screen-opacity: 0;
+    --backlight:white;
 }
 
 body {
     font-family: 'ChicagoFLF';
     overflow: hidden;
     margin: 0;
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none;
+    transition: background .25s linear;
 }
 
 hr {
@@ -55,7 +63,6 @@ p:hover {
 #title {
     text-align: center;
     pointer-events: none;
-    width: 80%;
     margin-left: auto;
     margin-right: auto;
     display: block;
@@ -64,19 +71,32 @@ p:hover {
     text-overflow: ellipsis;
 }
 
+#title:hover {
+    background: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
 #screen {
     width: var(--window-width);
     height: var(--window-height);
     border: 1px black solid;
     padding: var(--window-padding);
-    background-color: white;
+    background-color: var(--backlight);
     position: absolute;
     top: calc(50% - (var(--window-height)/2) - var(--window-padding));
     left: calc(50% - (var(--window-width)/2) - var(--window-padding));
     overflow-x: hidden;
     overflow-y: hidden;
-
+    transition: background-color .25s linear, transform .1s linear, opacity .15s linear;
     transform: scale(1);
+}
+
+@media (min-width:1800px){
+    #screen {
+        transform: scale(1.1);
+    }
+
 }
 
 #screen::before {
@@ -91,7 +111,7 @@ p:hover {
     z-index: 2;
     background-size: 100% 2px, 3px 100%;
     pointer-events: none;
-    opacity: .15;
+    opacity: .1;
 }
 
 .top-bar {
@@ -186,10 +206,15 @@ p:hover {
 
 #playButton {
     height: 15px;
+    width: 20px;
+    margin-right: 41px;
 }
 
-#shuffleButton {
+#shuffleButton, #repeatButton {
     height: 20px;
+    transition: opacity .1s linear;
+    width: 20px;
+    opacity: 0 !important;
 }
 
 .top-bar-buttons:hover {
@@ -230,6 +255,10 @@ p:hover {
     pointer-events: none;
 }
 
+#scub-handle:hover {
+    cursor: grab !important;
+}
+
 #scrub:hover #scrub-bar  {
     background-color: rgba(0, 0, 0, 0.0);
 }
@@ -255,7 +284,7 @@ p:hover {
     text-align: left;
 }
 
-#artist:hover, #album:hover {
+#artist:hover, #album:hover, #song-title:hover {
     cursor: pointer;
 }
 
@@ -345,10 +374,6 @@ h5 {
 }
 
 #btn-login:hover {
-    border: 1px black solid;
-}
-
-#btn-login:hover {
     cursor: pointer;
 }
 
@@ -365,4 +390,73 @@ h5 {
 
 #search:focus {
     outline: none;
+}
+
+#my-name {
+    transition: color .5s linear; 
+    color: black;
+}
+
+.disabled {
+    opacity: .25;
+    pointer-events: none;
+}
+
+#snake {
+    border: 0px black solid;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+
+.fa-volume-up {
+    position: relative;
+    display: inline-flex !important;
+}
+
+#album-art {
+    top: calc(50vh - 150px - 100px);
+    position: absolute;
+    display: block;
+    left: 0;
+    right: 0;
+    margin: auto;
+    z-index: -1;
+    border-radius: 15px;
+    width: 300px;
+    height: 300px;
+    transition: top .25s ease-in-out, opacity .5s linear;
+    opacity: 0;
+}
+
+
+#album-art:hover {
+    cursor: pointer;
+}
+
+.justify-text {
+    text-align: justify;
+    height: 26px;
+    padding-right: 5px !important;
+}
+
+.justify-text:after {
+    content: "";
+    display: inline-block;
+    width: 100%;	
+}
+
+.justify-text:hover, .who-ipod {
+    background: inherit;
+    color: inherit;
+    cursor: inherit;
+}
+
+.who-ipod {
+    text-align: center;
+    padding-right: 5px !important;
+}
+
+.cursor-hover:hover {
+    cursor: pointer;
 }

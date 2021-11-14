@@ -31,6 +31,8 @@ export const MENUS = {
     settings: [
         '<p class="menu-item">About</p>',
         '<p class="menu-item disabled">Info</p>',
+        '<p>Shuffle On</p>',
+        '<p>Repeat Off</p>',
         '<p class="disabled">Logout</p>'
     ],
     now_playing: NOW_PLAYING,
@@ -38,6 +40,8 @@ export const MENUS = {
     artists: [],
     songs: [],
     about: [],
+    lyrics: [],
+    recently_played: [],
     snake: [
         '<canvas id="snake" width="400" height="260"></canvas>',
     ]

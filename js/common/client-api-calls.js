@@ -1,13 +1,13 @@
-import conf from './conf/conf.json' assert { type: "json" };
+import conf from '../conf/conf.json' assert { type: "json" };
 
 // changes the current player to the param passed
-export async function changeSpotifyPlayerById(accessToken, deviceId) {
+export function changeSpotifyPlayerById(accessToken, deviceId) {
 
     const data = {
         device_ids: [deviceId]
     };
 
-    await fetch(`${conf.baseAPIURL}/me/player`, {
+    return fetch(`${conf.baseAPIURL}/me/player`, {
         method: 'PUT',
         headers: {
             ...conf.apiHeaders,
@@ -52,7 +52,7 @@ export async function getUsersAlbumsSpotify(accessToken) {
 }
 
 // gets the users profile data
-export async function getProfileData(accessToken) {
+export function getProfileData(accessToken) {
     try {
         return fetch(`${conf.baseAPIURL}/me`, {
             method: 'GET',
@@ -69,7 +69,7 @@ export async function getProfileData(accessToken) {
 }
 
 // get the album based on the id passed
-export async function getAlbumById(albumId, accessToken) {
+export function getAlbumById(albumId, accessToken) {
     try {
         return fetch(`${conf.baseAPIURL}/albums/${albumId}`, {
             method: 'GET',
@@ -101,7 +101,7 @@ export function getCurrentlyPlaying(accessToken) {
 }
 
 // change the users shuffle setting
-export async function setUsersPlaybackShuffle(accessToken, state) {
+export function setUsersPlaybackShuffle(accessToken, state) {
     try {
         return fetch(`${conf.baseAPIURL}/me/player/shuffle?state=${state}`, {
             method: 'PUT',
@@ -117,7 +117,7 @@ export async function setUsersPlaybackShuffle(accessToken, state) {
 }
 
 // change the users repeat mode setting
-export async function setUsersRepeatMode(accessToken, mode) {
+export function setUsersRepeatMode(accessToken, mode) {
     try {
         return fetch(`${conf.baseAPIURL}/me/player/repeat?state=${mode}`, {
             method: 'PUT',
@@ -130,4 +130,30 @@ export async function setUsersRepeatMode(accessToken, mode) {
     catch(e) {
         console.error('Failed to set users repeat mode', e);
     }    
+}
+
+export function getRecentlyPlayedTracks(accessToken, limit) {
+    try {
+        return fetch(`${conf.baseAPIURL}/me/player/recently-played?limit=${limit}`, {
+            method: 'GET',
+            headers: {
+                ...conf.apiHeaders,
+                'Authorization': `Bearer ${accessToken}`
+            }
+        }).then(r => r.json());
+    }
+    catch(e) {
+        console.error('Failed to get recently played tracks', e);
+    }   
+}
+
+export function getSongLyrics(songName, artistName) {
+    try {
+        return fetch(`${conf.personAPIURL}/getHTMLPage?artist=${artistName}&song=${songName}`, {
+            method: 'GET'
+        }).then(r => r.json());
+    }
+    catch(e) {
+        console.error(`Failed to get ${songName} by ${artistName} lyrics`, e); 
+    }
 }

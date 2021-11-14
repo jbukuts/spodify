@@ -1,16 +1,16 @@
 import { createPlayer } from './spotify.js';
-import { createPageFromArray, createHTMLFromInput } from './helper.js';
+import { createPageFromArray, createHTMLFromInput } from './common/helper.js';
 import { MENUS, SEARCH_BOX } from './templates.js';
 import { SpotifyData } from './classes/spotify-data.js';
-import { testReadingPage} from './genius.js';
 import conf from './conf/conf.json' assert { type: "json" };
-import { getUsersAlbumsSpotify, getProfileData, getCurrentlyPlaying } from './client-api-calls.js';
-
-async function test() {
-    // console.log(await testAPI('Grimy Waifu','JPEGMAFIA'));
-    console.log(await testReadingPage());
-}
-test();
+import { 
+    getUsersAlbumsSpotify, 
+    getProfileData, 
+    getCurrentlyPlaying, 
+    getRecentlyPlayedTracks,
+    setUsersRepeatMode,
+    setUsersPlaybackShuffle
+} from './common/client-api-calls.js';
 
 // stack of menu titles
 let titleText = ['iPod'];
@@ -19,7 +19,6 @@ let titleText = ['iPod'];
 const animationTime = 500;
 
 // important dom elements 
-var lines = Array.from(document.getElementsByClassName('lines'));
 const title = document.getElementById('title');
 const menu = document.getElementsByClassName('menu')[0];
 const screen = document.getElementById('screen');
@@ -27,37 +26,9 @@ const loginButton = document.getElementById('btn-login');
 
 const spotifyData = new SpotifyData();
 
-// log the user in and get their  access token
-function login(callback) {
-    var CLIENT_ID = '0981792b5bc94457a102687309d0beb6';
-    var REDIRECT_URI = `${conf.host}${conf.redirectPath}`;
-    function getLoginURL(scopes) {
-        return 'https://accounts.spotify.com/authorize?client_id=' + CLIENT_ID +
-          '&redirect_uri=' + encodeURIComponent(REDIRECT_URI) +
-          '&scope=' + encodeURIComponent(scopes.join(' ')) +
-          '&response_type=token';
-    }
-    
-    var url = getLoginURL(conf.spotifyPermissions);
-    
-    var width = 450,
-        height = 730,
-        left = (screen.width / 2) - (width / 2),
-        top = (screen.height / 2) - (height / 2);
-
-    window.addEventListener("message", function handler(event) {
-        var hash = JSON.parse(event.data);
-        if (hash.type == 'access_token') {
-            callback(hash.access_token);
-        }
-        this.removeEventListener('message', handler);
-    }, false);
-    
-    var w = window.open(url,
-        'Spotify',
-        'menubar=no,location=no,resizable=no,scrollbars=no,status=no, width=' + width + ', height=' + height + ', top=' + top + ', left=' + left
-    );
-}
+/** LISTENERS **/
+// set listener for the title
+title.addEventListener('click', async () => shiftPageAmount(1));
 
 // on login click prompt the user for auth
 loginButton.addEventListener('click', function() {
@@ -81,9 +52,9 @@ loginButton.addEventListener('click', function() {
 
             MENUS.about = [
                 ...MENUS.about,
-                `<p>Songs ${MENUS.songs.length}</p>`,
-                `<p>Albums ${MENUS.albums.length}</p>`,
-                `<p>Artist ${MENUS.artists.length}</p>`
+                `<p class="justify-text">Songs ${MENUS.songs.length}</p>`,
+                `<p class="justify-text">Albums ${MENUS.albums.length}</p>`,
+                `<p class="justify-text">Artist ${MENUS.artists.length}</p>`
             ];
 
             MENUS.albums.unshift(SEARCH_BOX);
@@ -98,6 +69,10 @@ loginButton.addEventListener('click', function() {
             document.getElementById('login').style.display = 'none';
         });
 
+        getRecentlyPlayedTracks(accessToken, 10).then(r => {
+            MENUS.recently_played = createHTMLFromInput(r.items.map(s => s.track), ['song-item']);
+        })
+
         // get the profile data for the user to save to the menus
         getProfileData(accessToken).then(profileData => {
             console.log(profileData);
@@ -105,37 +80,22 @@ loginButton.addEventListener('click', function() {
             document.title = titleText[0];
 
             MENUS.about = [
-                `<p>${titleText[0].toUpperCase()}</p>`,
-                `<p>Version ${conf.version}</p>`
+                `<p class="who-ipod">${titleText[0].toUpperCase()}</p>`,
+                `<p class="justify-text">Version ${conf.version}</p>`
             ]
         });
     });
 });
 
-// handles the search functionality
-const searchHandler = function(e) {
-    const input = e.target.value;
-    try {
-        // current pages nodes
-        const fullList = [...lines[lines.length-1].children];
-        if (fullList) {
-            // shift out of the search bar
-            fullList.shift();
-
-            // show all again
-            fullList.forEach((s) => s.style.display = 'block');
-
-            // query for those that dont match and hide
-            const regex = new RegExp(`^${input}[a-z]*`,'i');
-            fullList
-                .filter(i => !i.innerText.match(regex))
-                .forEach((s) => s.style.display = 'none');
+document.addEventListener('show_lyrics', (e) => {
+    console.log(MENUS.lyrics);
+    onMenuClick({
+        target: {
+            textContent: 'Lyrics',
+            classList: []
         }
-    }
-    catch(e) {
-        console.error('There was an issue with the search funcion', e);
-    }
-}
+    });
+});
 
 // go to artist/album from now playing
 document.addEventListener('go_to_item', (e) => {
@@ -151,6 +111,40 @@ document.addEventListener('go_to_item', (e) => {
     });
 });
 
+/** FUNCTIONS **/
+// log the user in and get their  access token
+function login(callback) {
+    var CLIENT_ID = '0981792b5bc94457a102687309d0beb6';
+    var REDIRECT_URI = `${conf.host}${conf.redirectPath}`;
+    function getLoginURL(scopes) {
+        return 'https://accounts.spotify.com/authorize?client_id=' + CLIENT_ID +
+          '&redirect_uri=' + encodeURIComponent(REDIRECT_URI) +
+          '&scope=' + encodeURIComponent(scopes.join(' ')) +
+          '&response_type=token';
+    }
+    
+    var url = getLoginURL(conf.spotifyPermissions);
+    
+    var width = 450,
+        height = 730,
+        left = (screen.width / 2) - (width / 2),
+        top = (screen.height / 2) - (height / 2);
+
+    window.addEventListener("message", function handler(event) {
+        var hash = JSON.parse(event.data);
+        if (hash.type == 'access_token') {
+            console.log(hash);
+            callback(hash.access_token);
+        }
+        this.removeEventListener('message', handler);
+    }, false);
+    
+    var w = window.open(url,
+        'Spotify',
+        'menubar=no,location=no,resizable=no,scrollbars=no,status=no, width=' + width + ', height=' + height + ', top=' + top + ', left=' + left
+    );
+}
+
 // shifting a page back by x amount
 async function shiftPageAmount(a) {
     try {
@@ -159,7 +153,7 @@ async function shiftPageAmount(a) {
         title.style['pointer-events'] = 'none';
 
         // update list
-        lines = Array.from(document.getElementsByClassName('lines'));
+        const lines = Array.from(document.getElementsByClassName('lines'));
 
         // cant go back
         if (lines.length === 1) return;
@@ -179,7 +173,7 @@ async function shiftPageAmount(a) {
             const temp = document.getElementsByClassName('lines');
             temp[temp.length - 1].remove();
         }
-        lines.splice(titleText.length, a);
+        // lines.splice(titleText.length, a);
     }
     catch(e) {
         console.error(`There was an issue shifting the page ${a} times`);
@@ -197,12 +191,9 @@ async function onMenuClick(e) {
         screen.style['pointer-events'] = 'none';
 
         // if already exist go to it
-        if (titleText.includes(e.target.textContent)) {
-            console.log('There is already a now playing!');
-            
-            const shiftAmount = lines.length - 1 - titleText.indexOf(e.target.textContent);
+        if (titleText.includes(e.target.textContent)) {    
+            const shiftAmount = titleText.length - 1 - titleText.indexOf(e.target.textContent);
             shiftPageAmount(shiftAmount);
-            // playSong();
             document.dispatchEvent(new CustomEvent('show_now_playing'));
             return;
         }
@@ -276,17 +267,19 @@ async function onMenuClick(e) {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         // do the transform
-        lines = [...document.getElementsByClassName('lines')];
+        const lines = [...document.getElementsByClassName('lines')];
         const multiplier = lines.length -1;
         lines.forEach(m => {
             m.style.transform = `translateX(calc(-${multiplier}00% - ${multiplier * 15}px))`;
         });
 
-        
+        // some pages need special treatmeant
         if (text === 'now_playing')
             document.dispatchEvent(new CustomEvent('show_now_playing'));
         else if (menuItems[0] === MENUS.snake[0])
             loadSnake();
+        else if(menuItems[0] === MENUS.settings[0])
+            createSettingsListeners()
 
         // new listeners for new menu
         setListeners();
@@ -302,20 +295,21 @@ async function onMenuClick(e) {
 
 // will play song and shift to now playing
 async function onSongClick(e) {
-
+    // if not the current song we can do this
     if (!e.target.classList.contains('currently-playing')) {
+        const lines = [...document.getElementsByClassName('lines')];
         const songList = Array.from(lines[lines.length - 1]
             .getElementsByTagName('p'))
             .map(s => s.dataset.uri);
+        
+        console.log(songList);
     
         const currentSongIndex = songList.findIndex(i => e.target.dataset.uri === i);
         const albumURI = spotifyData.findAlbumBySongID(e.target.dataset.uri);
     
-        // NOW_PLAYING[0] = "<h3 id=\"song-number\">test</h3>";
-        // MENUS.now_playing = ["<h3 id=\"song-number\">test</h3>"];
-    
         const data = {
-            context_uri: albumURI,
+            uris: songList,
+            // context_uri: albumURI,
             offset: {
                 position: currentSongIndex
             },
@@ -343,6 +337,16 @@ async function onSongClick(e) {
     onMenuClick(falseEvent);
 }
 
+function createSettingsListeners() {
+    document.getElementById('repeat-option').onclick = (e) => {
+        const repeatOptions = ['off','context','track'];
+        setUsersRepeatMode(spotifyData.getAccessToken(), repeatOptions[e.target.dataset.next]);
+    };
+    document.getElementById('shuffle-option').onclick = (e) => {
+        setUsersPlaybackShuffle(spotifyData.getAccessToken(), e.target.dataset.next);
+    };
+}
+
 // set the listeners for menu items
 function setListeners() {
     const menuElements = document.querySelectorAll('.lines > p.menu-item');
@@ -357,12 +361,9 @@ function setListeners() {
     })
 }
 
-// set listener for the title
-title.addEventListener('click', async () => shiftPageAmount(1));
-
 // logic responsible for clock
-const timeOptions = { hour: '2-digit', minute: '2-digit' };
 function flipClock(showClock) {
+    const timeOptions = { hour: '2-digit', minute: '2-digit' };
     setTimeout(() => {
         title.innerHTML = showClock ? 
             new Date().toLocaleTimeString('en-US', timeOptions) : titleText[titleText.length - 1];
@@ -370,14 +371,39 @@ function flipClock(showClock) {
     }, 10000);
 }
 
-// initial calls
-setListeners();
-flipClock(false);
-
 // loads the snake game
 function loadSnake() {
     const script = document.createElement("script");
     script.type = "text/javascript";
-    script.src = "./js/snake.js."; 
+    script.src = "./js/components/snake.js."; 
     document.getElementsByTagName("head")[0].appendChild(script);
 }
+
+// handles the search functionality
+const searchHandler = function(e) {
+    const input = e.target.value;
+    try {
+        // current pages nodes
+        const lines = [...document.getElementsByClassName('lines')];
+        const fullList = [...lines[lines.length-1].children];
+        if (fullList) {
+            // shift out of the search bar
+            fullList.shift();
+
+            // show all again
+            fullList.forEach((s) => s.style.display = 'block');
+
+            // query for those that dont match and hide
+            const regex = new RegExp(`^${input}[a-z]*`,'i');
+            fullList
+                .filter(i => !i.innerText.match(regex))
+                .forEach((s) => s.style.display = 'none');
+        }
+    }
+    catch(e) {
+        console.error('There was an issue with the search funcion', e);
+    }
+}
+
+flipClock(false);
+setListeners();

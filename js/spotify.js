@@ -1,5 +1,5 @@
 import { createPalette } from './palette/palette.js';
-import { getRandomInt, createTimeString } from './helper.js';
+import { getRandomInt, createTimeString } from './common/helper.js';
 import { mouseDownScrub, mouseUpScrub, scrubSong } from './scrub.js';
 import conf from './conf/conf.json' assert { type: "json" };
 import { 
@@ -7,8 +7,10 @@ import {
     getAlbumById, 
     getCurrentlyPlaying, 
     setUsersPlaybackShuffle, 
-    setUsersRepeatMode 
-} from './client-api-calls.js';
+    setUsersRepeatMode,
+    getSongLyrics
+} from './common/client-api-calls.js';
+import { MENUS } from './templates.js';
 
 Number.prototype.clamp = function(min, max) {
     return Math.min(Math.max(this, min), max);
@@ -18,12 +20,8 @@ const blobs = [...document.getElementsByClassName("blob")];
 const shuffleButton = document.getElementById('shuffleButton');
 const repeatButton = document.getElementById('repeatButton');
 const repeatOptions = ['off','context','track'];
-
+const volumeChange = .025;
 var currentVolume = .1;
-
-const pauseBtn = `./assets/icons/pause.svg`;
-const playBtn = `./assets/icons/play.svg`;
-
 
 export function createPlayer(token) {
 
@@ -58,10 +56,10 @@ export function createPlayer(token) {
                         var volMod = 0;
                         switch (e.code) {
                             case 'ArrowUp':
-                                volMod = .05;
+                                volMod = volumeChange;
                                 break;
                             case 'ArrowDown':
-                                volMod = -.05;
+                                volMod = -volumeChange;
                                 break;
                         }
                         player.getVolume().then(currentVolume => {
@@ -120,16 +118,38 @@ export function createPlayer(token) {
             // console.log('there was a change', state);
             const stateTrack = current_track;
             const storedTrack = JSON.parse(localStorage.getItem('current_song'));
-            document.getElementById('playButton').src = paused ? playBtn : pauseBtn;
+            document.getElementById('playButton').src = `./assets/icons/${paused ? 'play' : 'pause'}.svg`;
 
-            console.log(repeat_mode);
+            const repeatModes = ['Off','All', 'One'];
+            const shuffleMenuItem = document.getElementById('shuffle-option');
+            const nextRepeatMode = repeat_mode + 1 > repeatModes.length - 1 ? 0 : repeat_mode + 1;
+            if (shuffleMenuItem) {
+                const repeatMenuItem = document.getElementById('repeat-option');
+                shuffleMenuItem.innerHTML = `Shuffle ${shuffle ? 'On' : 'Off'}`;
+                repeatMenuItem.innerHTML = `Repeat ${repeatModes[repeat_mode]}`;
+                repeatMenuItem.dataset.next =  nextRepeatMode;
+                shuffleMenuItem.dataset.next =  !shuffle;
+            }
+
+            MENUS.settings[2] = `<p class="justify-text cursor-hover" data-next=${!shuffle} id="shuffle-option">Shuffle ${shuffle ? 'On' : 'Off'}</p>`;
+            MENUS.settings[3] = `<p class="justify-text cursor-hover" data-next=${nextRepeatMode} id="repeat-option">Repeat ${repeatModes[repeat_mode]}</p>`;
+
+            // TODO: Remove this functionality
             shuffleButton.style.opacity = shuffle ? '1' : '.25';
             repeatButton.style.opacity = repeat_mode > 0 ? '1' : '.25';
             repeatButton.style.background = repeat_mode === 2 ? 'red' : 'white';
             
             if (stateTrack && storedTrack && stateTrack.id !== storedTrack.id) {
                 localStorage.setItem('current_song', JSON.stringify(stateTrack));
-                // console.log(MENUS);
+
+                // change the lyrics
+                getSongLyrics(stateTrack.name, stateTrack.artists[0].name).then(r => {
+                    console.log(r)
+                    MENUS.lyrics = r.lyrics.map(line => {
+                        return `<p>${line}</p>`;
+                    });
+                    console.log(MENUS.lyrics);
+                });
 
                 const pages = Array.from(document.getElementsByClassName('lines'));
                 pages.forEach(p => {
@@ -192,69 +212,6 @@ export function createPlayer(token) {
             player.pause();
         });
 
-        // draw the now playing menu based on current playstate 
-        const drawNowPlayingMenu = (playState) => {
-            const currentPlaying = playState.track_window.current_track;
-            document.getElementById('song-title').innerHTML = currentPlaying.name;
-            document.getElementById('artist').innerHTML = currentPlaying.artists[0].name;
-            document.getElementById('album').innerHTML = currentPlaying.album.name;
-            
-            const songNumber = document.getElementById('song-number');
-            getCurrentlyPlaying(token).then(c => {
-                document.getElementById('album').dataset.uri = c.item.album.uri;
-                getAlbumById(c.item.album.id, token).then(a => {
-                    const trackIndex = a.tracks.items.findIndex((t) => {
-                        return t.uri === currentPlaying.uri || 
-                        (currentPlaying.linked_from.uri && t.uri === currentPlaying.linked_from.uri)}) + 1;
-                    songNumber.innerHTML = `${trackIndex} of ${a.tracks.items.length}`;
-                })
-            });
-        }
-
-        // draw the scrub based on current playstate
-        const drawNowPlayingScrub = (playState) => {
-            const scrubBar = document.getElementById('scrub-bar');
-
-            // get vals from player
-            const duration = playState.duration / 1000;
-            const currentTime = playState.position / 1000;
-            const percent = currentTime / duration;
-
-            // set the timers vals
-            document.getElementById('player-time').innerHTML = createTimeString(duration, currentTime);
-            scrubBar.style.width = `${percent * 100}%`;
-        };
-
-        // create the palette and change the background
-        const drawTheBlobs = (playState) => {
-            const imageURL = playState.track_window.current_track.album.images[0].url;
-            // get the palette
-            createPalette(imageURL, 10, 16).then(r => { 
-                console.log(r);
-
-                // our bg is first in the list
-                const bgColor = r[0];
-
-                // get the contrasting color for my name
-                const luminanceVal = (bgColor[0] * 0.2126 + bgColor[1] * 0.7152 + bgColor[1] * 0.0722) / 255;
-                document.getElementById('my-name').style.color = 
-                    `hsl(0, 0%, calc((${luminanceVal} - ${.5}) * -10000000%))`;
-                document.body.style.background = `rgb(${bgColor[0]},${bgColor[1]},${bgColor[2]})`;
-
-                // handle single color palettes
-                if (r.length === 1) {
-                    r = [r[0],r[0]];
-                }
-
-                // for each of the blobs pull a random color
-                blobs.forEach(b => {
-                    const randomColor = r[getRandomInt(1,r.length)];
-                    //console.log(randomColor);
-                    b.style.background = `rgb(${randomColor[0]},${randomColor[1]},${randomColor[2]})`;
-                })                
-            });
-        }
-
         document.addEventListener('show_now_playing', () => {
             const scrub = document.getElementById('scrub');
             scrub.addEventListener("mousedown", (e) => mouseDownScrub(e, scrub));
@@ -284,6 +241,11 @@ export function createPlayer(token) {
                     }
                 }));
             };
+
+            document.getElementById('song-title').onclick = (e) => {
+                console.log(e.target.textContent);
+                document.dispatchEvent(new CustomEvent('show_lyrics'));
+            };
             
             // draw elements
             player.getCurrentState().then(playState => {
@@ -296,6 +258,72 @@ export function createPlayer(token) {
         document.getElementById('playButton').onclick = function() {
             player.togglePlay();
         };
+
+        // draw the now playing menu based on current playstate 
+        const drawNowPlayingMenu = (playState) => {
+            const currentPlaying = playState.track_window.current_track;
+            document.getElementById('song-title').innerHTML = currentPlaying.name;
+            document.getElementById('artist').innerHTML = currentPlaying.artists[0].name;
+            document.getElementById('album').innerHTML = currentPlaying.album.name;
+            
+            const songNumber = document.getElementById('song-number');
+            getCurrentlyPlaying(token).then(c => {
+                document.getElementById('album').dataset.uri = c.item.album.uri;
+                getAlbumById(c.item.album.id, token).then(a => {
+                    const trackIndex = a.tracks.items.findIndex((t) => {
+                        return t.uri === currentPlaying.uri || 
+                        (currentPlaying.linked_from.uri && t.uri === currentPlaying.linked_from.uri)}) + 1;
+                    songNumber.innerHTML = `${trackIndex} of ${a.tracks.items.length}`;
+                })
+            });
+        };
+
+        // draw the scrub based on current playstate
+        const drawNowPlayingScrub = (playState) => {
+            const scrubBar = document.getElementById('scrub-bar');
+
+            // get vals from player
+            const duration = playState.duration / 1000;
+            const currentTime = playState.position / 1000;
+            const percent = currentTime / duration;
+
+            // set the timers vals
+            document.getElementById('player-time').innerHTML = createTimeString(duration, currentTime);
+            scrubBar.style.width = `${percent * 100}%`;
+        };
+
+        // create the palette and change the background
+        const drawTheBlobs = (playState) => {
+            const imageURL = playState.track_window.current_track.album.images[0].url;
+            // get the palette
+
+            document.getElementById('album-art').style.opacity = '1';
+            createPalette(imageURL, 10, 16).then(r => { 
+                console.log(r);
+                document.getElementById('album-art').src = imageURL;
+
+                // our bg is first in the list
+                const bgColor = r[0];
+
+                // get the contrasting color for my name
+                const luminanceVal = (bgColor[0] * 0.2126 + bgColor[1] * 0.7152 + bgColor[1] * 0.0722) / 255;
+                document.getElementById('my-name').style.color = 
+                    `hsl(0, 0%, calc((${luminanceVal} - ${.5}) * -10000000%))`;
+                document.body.style.background = `rgb(${bgColor[0]},${bgColor[1]},${bgColor[2]})`;
+
+                // handle single color palettes
+                if (r.length === 1) {
+                    r = [r[0],r[0]];
+                }
+
+                // for each of the blobs pull a random color
+                blobs.forEach(b => {
+                    const randomColor = r[getRandomInt(1,r.length)];
+                    //console.log(randomColor);
+                    b.style.background = `rgb(${randomColor[0]},${randomColor[1]},${randomColor[2]})`;
+                })                
+            });
+        }
 
         // get the state every second to update the players scrub bar
         const getSpotifyPlayerState = () => {
@@ -312,13 +340,12 @@ export function createPlayer(token) {
                     catch(e) {
                         console.error('there was an issue seeking', e);
                     }
-                    
                 }
                 getSpotifyPlayerState();
             }, 1000);
         };
-
         getSpotifyPlayerState();
+
         player.connect();
     }
 }

@@ -34,6 +34,7 @@ function render() {
         // you have lost
         if (gameOver) {
             console.log('THE END!');
+            unloadScript();
             return;
         }
 
@@ -82,6 +83,7 @@ function render() {
                 snakeArray[index][1] = newY;
 
                 if (index === snakeArray.length-1 && newX === foodPos[0] && newY === foodPos[1]) {
+                    // eat the food
                     snakeArray.unshift([foodPos[0],foodPos[1]]);
 
                     var detectFoodCollision = 0;
@@ -97,10 +99,14 @@ function render() {
         }
     }
     else {
-        const head = document.getElementsByTagName("head")[0];
-        head.lastChild.remove();
-        document.removeEventListener('keydown', handleControls);
+        unloadScript();
     }
+}
+
+var unloadScript = () => {
+    const head = document.getElementsByTagName("head")[0];
+    head.lastChild.remove();
+    document.removeEventListener('keydown', handleControls);
 }
 
 var handleControls = (e) => {

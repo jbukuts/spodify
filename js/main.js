@@ -375,7 +375,7 @@ function flipClock(showClock) {
 function loadSnake() {
     const script = document.createElement("script");
     script.type = "text/javascript";
-    script.src = "./js/components/snake.js."; 
+    script.src = "./js/components/snake.js"; 
     document.getElementsByTagName("head")[0].appendChild(script);
 }
 

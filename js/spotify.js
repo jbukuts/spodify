@@ -33,7 +33,7 @@ export function createPlayer(token) {
     console.log('creating player!');
     window.onSpotifyWebPlaybackSDKReady = () => {
         const player = new Spotify.Player({
-            name: 'Web Playback SDK Quick Start Player',
+            name: 'Your iPod',
             getOAuthToken: cb => { cb(token); },
             volume: currentVolume
         });

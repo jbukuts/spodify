@@ -3,7 +3,7 @@
     "host": "https://jbukuts.com/spodify",
     "redirectPath": "/proxy.html",
     "baseAPIURL": "https://api.spotify.com/v1",
-    "personAPIURL": "http://api.jbukuts.com/api",
+    "personAPIURL": "https://api.jbukuts.com/api",
     "apiHeaders": {
         "Content-Type": "application/json",
         "Accept": "application/json"

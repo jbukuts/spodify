@@ -1,4 +1,4 @@
-import { createTimeString } from './common/helper.js';
+import { createTimeString } from '../common/helper.js';
 
 // logic for song scrubbing
 var mouseDown = false;

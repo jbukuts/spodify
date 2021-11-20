@@ -1,4 +1,4 @@
-import { getRandomInt } from './common/helper.js';
+import { getRandomInt } from '../common/helper.js';
 
 let last = 0;
 let changeSpeed = 1500;

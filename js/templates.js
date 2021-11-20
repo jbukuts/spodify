@@ -30,10 +30,18 @@ export const MENUS = {
     ],
     settings: [
         '<p class="menu-item">About</p>',
-        '<p class="menu-item disabled">Info</p>',
+        '<p class="menu-item">Info</p>',
         '<p>Shuffle On</p>',
         '<p>Repeat Off</p>',
         '<p class="disabled">Logout</p>'
+    ],
+    info: [
+        '<p>Hello,</p>',
+        '<p>This app was written entirely in basic JS by me.</p>',
+        '<p>My main goal for this site was to create something functional and fun to use while also limiting myself to not using a single external library (no React, no jQuery)</p>',
+        '<p>Of course in order to even play music I was able to make use of Spotify\'s API library. For the lyrics section of the app I wrote a personal API that scrapes from Genius\' website (since their API does everything except return fucking lyrics?!?!)</p>',
+        '<p>Hope you enjoy using the app.</p>',
+        '<p>More features are to come :)</p>',
     ],
     now_playing: NOW_PLAYING,
     albums: [],

@@ -1,4 +1,4 @@
-import conf from '../conf/conf.json' assert { type: "json" };
+import { conf, env } from '../conf/conf.js';
 
 // changes the current player to the param passed
 export function changeSpotifyPlayerById(accessToken, deviceId) {
@@ -7,10 +7,10 @@ export function changeSpotifyPlayerById(accessToken, deviceId) {
         device_ids: [deviceId]
     };
 
-    return fetch(`${conf.baseAPIURL}/me/player`, {
+    return fetch(`${conf[env].baseAPIURL}/me/player`, {
         method: 'PUT',
         headers: {
-            ...conf.apiHeaders,
+            ...conf[env].apiHeaders,
             'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify(data)
@@ -27,11 +27,11 @@ export async function getUsersAlbumsSpotify(accessToken) {
         // we perform a loop while the length of the data
         do {
             // make the call and get the data
-            const apiEndpoint = `${conf.baseAPIURL}/me/albums?limit=${limit}&offset=${offset}`;
+            const apiEndpoint = `${conf[env].baseAPIURL}/me/albums?limit=${limit}&offset=${offset}`;
             const res = await fetch(apiEndpoint, {
                 method: 'GET',
                 headers: {
-                    ...conf.apiHeaders,
+                    ...conf[env].apiHeaders,
                     'Authorization': `Bearer ${accessToken}`
                 }
             })
@@ -54,10 +54,10 @@ export async function getUsersAlbumsSpotify(accessToken) {
 // gets the users profile data
 export function getProfileData(accessToken) {
     try {
-        return fetch(`${conf.baseAPIURL}/me`, {
+        return fetch(`${conf[env].baseAPIURL}/me`, {
             method: 'GET',
             headers: {
-                ...conf.apiHeaders,
+                ...conf[env].apiHeaders,
                 'Authorization': `Bearer ${accessToken}`
             }
         })
@@ -71,10 +71,10 @@ export function getProfileData(accessToken) {
 // get the album based on the id passed
 export function getAlbumById(albumId, accessToken) {
     try {
-        return fetch(`${conf.baseAPIURL}/albums/${albumId}`, {
+        return fetch(`${conf[env].baseAPIURL}/albums/${albumId}`, {
             method: 'GET',
             headers: {
-                ...conf.apiHeaders,
+                ...conf[env].apiHeaders,
                 'Authorization': `Bearer ${accessToken}`
             }
         }).then(r => r.json());
@@ -87,10 +87,10 @@ export function getAlbumById(albumId, accessToken) {
 // gets the currently playing song for the user
 export function getCurrentlyPlaying(accessToken) {
     try {
-        return fetch(`${conf.baseAPIURL}/me/player/currently-playing`, {
+        return fetch(`${conf[env].baseAPIURL}/me/player/currently-playing`, {
             method: 'GET',
             headers: {
-                ...conf.apiHeaders,
+                ...conf[env].apiHeaders,
                 'Authorization': `Bearer ${accessToken}`
             }
         }).then(r => r.json());
@@ -103,10 +103,10 @@ export function getCurrentlyPlaying(accessToken) {
 // change the users shuffle setting
 export function setUsersPlaybackShuffle(accessToken, state) {
     try {
-        return fetch(`${conf.baseAPIURL}/me/player/shuffle?state=${state}`, {
+        return fetch(`${conf[env].baseAPIURL}/me/player/shuffle?state=${state}`, {
             method: 'PUT',
             headers: {
-                ...conf.apiHeaders,
+                ...conf[env].apiHeaders,
                 'Authorization': `Bearer ${accessToken}`
             }
         });
@@ -119,10 +119,10 @@ export function setUsersPlaybackShuffle(accessToken, state) {
 // change the users repeat mode setting
 export function setUsersRepeatMode(accessToken, mode) {
     try {
-        return fetch(`${conf.baseAPIURL}/me/player/repeat?state=${mode}`, {
+        return fetch(`${conf[env].baseAPIURL}/me/player/repeat?state=${mode}`, {
             method: 'PUT',
             headers: {
-                ...conf.apiHeaders,
+                ...conf[env].apiHeaders,
                 'Authorization': `Bearer ${accessToken}`
             }
         });
@@ -134,10 +134,10 @@ export function setUsersRepeatMode(accessToken, mode) {
 
 export function getRecentlyPlayedTracks(accessToken, limit) {
     try {
-        return fetch(`${conf.baseAPIURL}/me/player/recently-played?limit=${limit}`, {
+        return fetch(`${conf[env].baseAPIURL}/me/player/recently-played?limit=${limit}`, {
             method: 'GET',
             headers: {
-                ...conf.apiHeaders,
+                ...conf[env].apiHeaders,
                 'Authorization': `Bearer ${accessToken}`
             }
         }).then(r => r.json());
@@ -149,7 +149,7 @@ export function getRecentlyPlayedTracks(accessToken, limit) {
 
 export function getSongLyrics(songName, artistName) {
     try {
-        return fetch(`${conf.personAPIURL}/getHTMLPage?artist=${artistName}&song=${songName}`, {
+        return fetch(`${conf[env].personAPIURL}/getHTMLPage?artist=${artistName}&song=${songName}`, {
             method: 'GET'
         }).then(r => r.json());
     }

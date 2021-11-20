@@ -8,7 +8,7 @@ albumArt.onclick = () => {
     albumArt.style.pointerEvents = "none";
     if (albumArt.style.zIndex === "1") {
         new Promise(resolve => setTimeout(resolve, 250)).then(() => {
-            albumArt.style.zIndex = "-1";
+            albumArt.style.zIndex = "0";
             albumArt.style.top = "calc(50vh - 150px - 100px)";
             albumArt.style.pointerEvents = "all";
             document.getElementById('screen').style.opacity = '1';

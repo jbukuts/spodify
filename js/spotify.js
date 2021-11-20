@@ -1,7 +1,6 @@
-import { createPalette } from './palette/palette.js';
+import { createPalette } from './common/palette.js';
 import { getRandomInt, createTimeString } from './common/helper.js';
-import { mouseDownScrub, mouseUpScrub, scrubSong } from './scrub.js';
-import conf from './conf/conf.json' assert { type: "json" };
+import { mouseDownScrub, mouseUpScrub, scrubSong } from './components/scrub.js';
 import { 
     changeSpotifyPlayerById, 
     getAlbumById, 
@@ -42,6 +41,8 @@ export function createPlayer(token) {
         player.addListener('ready', ({ device_id }) => {
             console.log('Ready with Device ID', device_id);
             localStorage.setItem('device_id', device_id);
+            
+            // change the player to the current player
             changeSpotifyPlayerById(token, device_id).then(() => {
                 player.getCurrentState().then(playState => {
                     drawTheBlobs(playState);
@@ -80,12 +81,14 @@ export function createPlayer(token) {
                 }
             });
 
+            // event for shuffle buttons
             shuffleButton.onclick = () => {
                 player.getCurrentState().then(({ shuffle }) => {
                     setUsersPlaybackShuffle(token, !shuffle, device_id);
                 });                
             };
 
+            // event for changing repeat
             repeatButton.onclick = () => {
                 player.getCurrentState().then(({ repeat_mode }) => {
                     const repeatMode = repeat_mode + 1 > 2 ? 0 : repeat_mode + 1;
@@ -117,6 +120,10 @@ export function createPlayer(token) {
         player.addListener('player_state_changed', ({ track_window: { current_track }, shuffle, repeat_mode, paused, duration, position }) => {
             // console.log('there was a change', state);
             const stateTrack = current_track;
+
+            if (!localStorage.getItem('current_song'))
+                localStorage.setItem('current_song', JSON.stringify(stateTrack));
+
             const storedTrack = JSON.parse(localStorage.getItem('current_song'));
             document.getElementById('playButton').src = `./assets/icons/${paused ? 'play' : 'pause'}.svg`;
 
@@ -146,7 +153,7 @@ export function createPlayer(token) {
                 getSongLyrics(stateTrack.name, stateTrack.artists[0].name).then(r => {
                     console.log(r)
                     MENUS.lyrics = r.lyrics.map(line => {
-                        return `<p>${line}</p>`;
+                        return `<p class="lyrics-line">${line}</p>`;
                     });
                     console.log(MENUS.lyrics);
                 });
@@ -294,6 +301,9 @@ export function createPlayer(token) {
 
         // create the palette and change the background
         const drawTheBlobs = (playState) => {
+            if (!playState)
+                return;
+
             const imageURL = playState.track_window.current_track.album.images[0].url;
             // get the palette
 

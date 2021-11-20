@@ -2,7 +2,7 @@ import { createPlayer } from './spotify.js';
 import { createPageFromArray, createHTMLFromInput } from './common/helper.js';
 import { MENUS, SEARCH_BOX } from './templates.js';
 import { SpotifyData } from './classes/spotify-data.js';
-import conf from './conf/conf.json' assert { type: "json" };
+import { conf, env, spotifyPermissions } from './conf/conf.js';
 import { 
     getUsersAlbumsSpotify, 
     getProfileData, 
@@ -33,6 +33,8 @@ title.addEventListener('click', async () => shiftPageAmount(1));
 // on login click prompt the user for auth
 loginButton.addEventListener('click', function() {
     login(async function(accessToken) {
+        localStorage.removeItem('current_song');
+
         // this is the callback
         window.document.removeEventListener("message", this, false);
         localStorage.setItem('access_token', accessToken);
@@ -81,7 +83,7 @@ loginButton.addEventListener('click', function() {
 
             MENUS.about = [
                 `<p class="who-ipod">${titleText[0].toUpperCase()}</p>`,
-                `<p class="justify-text">Version ${conf.version}</p>`
+                `<p class="justify-text">Version ${conf[env].version}</p>`
             ]
         });
     });
@@ -115,7 +117,8 @@ document.addEventListener('go_to_item', (e) => {
 // log the user in and get their  access token
 function login(callback) {
     var CLIENT_ID = '0981792b5bc94457a102687309d0beb6';
-    var REDIRECT_URI = `${conf.host}${conf.redirectPath}`;
+    const currentUrl = window.location.href;
+    var REDIRECT_URI = `${currentUrl.substring(0, currentUrl.lastIndexOf('/'))}/proxy.html`;
     function getLoginURL(scopes) {
         return 'https://accounts.spotify.com/authorize?client_id=' + CLIENT_ID +
           '&redirect_uri=' + encodeURIComponent(REDIRECT_URI) +
@@ -123,7 +126,7 @@ function login(callback) {
           '&response_type=token';
     }
     
-    var url = getLoginURL(conf.spotifyPermissions);
+    var url = getLoginURL(spotifyPermissions);
     
     var width = 450,
         height = 730,

@@ -53,49 +53,49 @@ function render() {
             const snakeCtx = snakeGrid.getContext('2d');
             snakeCtx.clearRect(0, 0, snakeSize * gridWidth, snakeSize * gridHeight);
             
-            
             snakeCtx.fillStyle = 'gray';
             snakeCtx.fillRect(foodPos[0], foodPos[1], snakeSize, snakeSize);
             snakeCtx.fillStyle = 'black';
 
-            snakeArray.forEach((point, index) => {
-                snakeArray[index][0]+=xMove;
-                snakeArray[index][1]+=yMove;
-                // last index is head
-                if (index === snakeArray.length-1) {
-                    if (snakeArray.length > 1) {
-                        const detectCollision = snakeArray.slice(0,snakeArray.length-1).findIndex(p => {
-                            return p[0] === snakeArray[index][0] && p[1] === snakeArray[index][1];
-                        });
+            // move the snake
+            // last index is head
+            const lastIndex = snakeArray.length - 1;
+            const currentHead = snakeArray[lastIndex];
+            snakeArray.shift();
+            snakeArray.push([currentHead[0] + xMove, currentHead[1] + yMove]);
 
-                        if (detectCollision > -1)
-                            gameOver = true;
-                    }
-                } 
-                else {
-                    snakeArray[index][0] = snakeArray[index+1][0];
-                    snakeArray[index][1] = snakeArray[index+1][1];
-                }
-                
+            // draw the snake
+            snakeArray.forEach((point, index) => {
                 const newX = point[0] >= (gridWidth * snakeSize) ? 0 : (point[0] < 0 ? (gridWidth * snakeSize) - snakeSize : point[0]);
                 const newY = point[1] >= (gridHeight * snakeSize) ? 0 : (point[1] < 0 ? (gridHeight * snakeSize) - snakeSize : point[1]);
                 snakeArray[index][0] = newX;
                 snakeArray[index][1] = newY;
-
-                if (index === snakeArray.length-1 && newX === foodPos[0] && newY === foodPos[1]) {
-                    // eat the food
-                    snakeArray.unshift([foodPos[0],foodPos[1]]);
-
-                    var detectFoodCollision = 0;
-                    while (detectFoodCollision > -1) {
-                        foodPos = [getRandomInt(0, gridWidth-1) * snakeSize, getRandomInt(0, gridHeight-1) * snakeSize];
-                        detectFoodCollision = snakeArray.findIndex(p => {    
-                            return p[0] === foodPos[0] && p[1] === foodPos[1];
-                        });
-                    }
-                }
                 snakeCtx.fillRect(newX, newY, snakeSize, snakeSize);
             });
+
+            // detect collision
+            if (snakeArray.length > 1) {
+                const detectCollision = snakeArray.slice(0,lastIndex).findIndex(p => {
+                    return p[0] === snakeArray[lastIndex][0] && p[1] === snakeArray[lastIndex][1];
+                });
+
+                if (detectCollision > -1)
+                    gameOver = true;
+            }
+            
+            // detect eating the food
+            if (snakeArray[lastIndex][0] === foodPos[0] && snakeArray[lastIndex][1] === foodPos[1]) {
+                // eat the food
+                snakeArray.unshift([foodPos[0],foodPos[1]]);
+
+                var detectFoodCollision = 0;
+                while (detectFoodCollision > -1) {
+                    foodPos = [getRandomInt(0, gridWidth-1) * snakeSize, getRandomInt(0, gridHeight-1) * snakeSize];
+                    detectFoodCollision = snakeArray.findIndex(p => {    
+                        return p[0] === foodPos[0] && p[1] === foodPos[1];
+                    });
+                }
+            }
         }
     }
     else {

@@ -36,7 +36,7 @@ loginButton.addEventListener('click', function() {
         localStorage.removeItem('current_song');
 
         // this is the callback
-        window.document.removeEventListener("message", this, false);
+        window.document.removeEventListener('message', this, false);
         localStorage.setItem('access_token', accessToken);
         spotifyData.setAccessToken(accessToken);
 
@@ -73,7 +73,7 @@ loginButton.addEventListener('click', function() {
 
         getRecentlyPlayedTracks(accessToken, 10).then(r => {
             MENUS.recently_played = createHTMLFromInput(r.items.map(s => s.track), ['song-item']);
-        })
+        });
 
         // get the profile data for the user to save to the menus
         getProfileData(accessToken).then(profileData => {
@@ -84,18 +84,24 @@ loginButton.addEventListener('click', function() {
             MENUS.about = [
                 `<p class="who-ipod">${titleText[0].toUpperCase()}</p>`,
                 `<p class="justify-text">Version ${conf[env].version}</p>`
-            ]
+            ];
         });
     });
 });
 
 document.addEventListener('show_lyrics', (e) => {
-    console.log(MENUS.lyrics);
+    console.log(e.detail);
     onMenuClick({
         target: {
             textContent: 'Lyrics',
             classList: []
         }
+    }).then(() => {
+        // time to scroll to where we think the song is
+        const allPages = document.getElementsByClassName('lines');
+        const lyricsPage = allPages[allPages.length-1];
+        console.log(lyricsPage.scrollHeight);
+        lyricsPage.scrollTop = lyricsPage.scrollHeight * e.detail.percent;
     });
 });
 
@@ -133,7 +139,7 @@ function login(callback) {
         left = (screen.width / 2) - (width / 2),
         top = (screen.height / 2) - (height / 2);
 
-    window.addEventListener("message", function handler(event) {
+    window.addEventListener('message', function handler(event) {
         var hash = JSON.parse(event.data);
         if (hash.type == 'access_token') {
             console.log(hash);
@@ -142,7 +148,7 @@ function login(callback) {
         this.removeEventListener('message', handler);
     }, false);
     
-    var w = window.open(url,
+    window.open(url,
         'Spotify',
         'menubar=no,location=no,resizable=no,scrollbars=no,status=no, width=' + width + ', height=' + height + ', top=' + top + ', left=' + left
     );
@@ -224,7 +230,7 @@ async function onMenuClick(e) {
             });
         }
         else if ([...e.target.classList].includes('artist-item')) {
-            const albumForArtistJSON = spotifyData.getAlbumsForArtist(e.target.textContent)
+            const albumForArtistJSON = spotifyData.getAlbumsForArtist(e.target.textContent);
             menuItems = createHTMLFromInput(albumForArtistJSON,['menu-item','album-item']);
 
             // go straight to alubm for artists with single album
@@ -282,10 +288,11 @@ async function onMenuClick(e) {
         else if (menuItems[0] === MENUS.snake[0])
             loadSnake();
         else if(menuItems[0] === MENUS.settings[0])
-            createSettingsListeners()
+            createSettingsListeners();
 
         // new listeners for new menu
-        setListeners();
+        createMenuListeners(lines[lines.length - 1]);
+        createSongListeners(lines[lines.length - 1]);
     }
     catch(err) {
         console.error('There was an error shifting menu', err);
@@ -308,7 +315,7 @@ async function onSongClick(e) {
         console.log(songList);
     
         const currentSongIndex = songList.findIndex(i => e.target.dataset.uri === i);
-        const albumURI = spotifyData.findAlbumBySongID(e.target.dataset.uri);
+        // const albumURI = spotifyData.findAlbumBySongID(e.target.dataset.uri);
     
         const data = {
             uris: songList,
@@ -336,7 +343,7 @@ async function onSongClick(e) {
             textContent: 'Now Playing',
             classList: []
         }
-    }
+    };
     onMenuClick(falseEvent);
 }
 
@@ -350,18 +357,18 @@ function createSettingsListeners() {
     };
 }
 
-// set the listeners for menu items
-function setListeners() {
-    const menuElements = document.querySelectorAll('.lines > p.menu-item');
-    const songElements = document.querySelectorAll('.lines > p.song-item');
+function createSongListeners(element) {
+    const songElements = element.querySelectorAll('p.song-item');
+    songElements.forEach(item => {
+        item.addEventListener('click', onSongClick, false);
+    });
+}
 
+function createMenuListeners(element) {
+    const menuElements = element.querySelectorAll('p.menu-item');
     menuElements.forEach(item => {
         item.addEventListener('click', onMenuClick, false);
     });
-
-    songElements.forEach(item => {
-        item.addEventListener('click', onSongClick, false);
-    })
 }
 
 // logic responsible for clock
@@ -376,10 +383,10 @@ function flipClock(showClock) {
 
 // loads the snake game
 function loadSnake() {
-    const script = document.createElement("script");
-    script.type = "text/javascript";
-    script.src = "./js/components/snake.js"; 
-    document.getElementsByTagName("head")[0].appendChild(script);
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = './js/components/snake.js'; 
+    document.getElementsByTagName('head')[0].appendChild(script);
 }
 
 // handles the search functionality
@@ -406,7 +413,7 @@ const searchHandler = function(e) {
     catch(e) {
         console.error('There was an issue with the search funcion', e);
     }
-}
+};
 
 flipClock(false);
-setListeners();
+createMenuListeners(document.getElementsByClassName('lines')[0]);

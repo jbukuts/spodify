@@ -35,7 +35,7 @@ export async function getUsersAlbumsSpotify(accessToken) {
                     'Authorization': `Bearer ${accessToken}`
                 }
             })
-            .then(response => response.json());
+                .then(response => response.json());
 
             // if theres an undefined in the list we need to go again
             // for this offset :(
@@ -43,7 +43,7 @@ export async function getUsersAlbumsSpotify(accessToken) {
                 fullAlbumList = fullAlbumList.concat(res.items);
                 offset+= limit;
             }
-        } while(fullAlbumList.length % limit === 0)
+        } while(fullAlbumList.length % limit === 0);
     } 
     catch(e) {
         console.error(e);
@@ -61,7 +61,7 @@ export function getProfileData(accessToken) {
                 'Authorization': `Bearer ${accessToken}`
             }
         })
-        .then(response => response.json());
+            .then(response => response.json());
     }
     catch(e) {
         console.error('There was an issue getting users profile data', e);

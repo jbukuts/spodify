@@ -15,7 +15,7 @@ Number.prototype.clamp = function(min, max) {
     return Math.min(Math.max(this, min), max);
 };
 
-const blobs = [...document.getElementsByClassName("blob")];
+const blobs = [...document.getElementsByClassName('blob')];
 const shuffleButton = document.getElementById('shuffleButton');
 const repeatButton = document.getElementById('repeatButton');
 const repeatOptions = ['off','context','track'];
@@ -25,12 +25,13 @@ var currentVolume = .1;
 export function createPlayer(token) {
 
     // drop player script in
-    var tag = document.createElement("script");
-    tag.src = "https://sdk.scdn.co/spotify-player.js";
-    document.getElementsByTagName("head")[0].appendChild(tag);
+    var tag = document.createElement('script');
+    tag.src = 'https://sdk.scdn.co/spotify-player.js';
+    document.getElementsByTagName('head')[0].appendChild(tag);
 
     console.log('creating player!');
     window.onSpotifyWebPlaybackSDKReady = () => {
+        // eslint-disable-next-line no-undef
         const player = new Spotify.Player({
             name: 'Your iPod',
             getOAuthToken: cb => { cb(token); },
@@ -44,9 +45,17 @@ export function createPlayer(token) {
             
             // change the player to the current player
             changeSpotifyPlayerById(token, device_id).then(() => {
-                player.getCurrentState().then(playState => {
-                    drawTheBlobs(playState);
-                })
+                getCurrentlyPlaying(token).then(({item}) => {
+                    // set the lyrics
+                    getSongLyrics(item.name, item.artists[0].name).then(r => {
+                        MENUS.lyrics = r.lyrics.map(line => {
+                            return `<p class="lyrics-line">${line}</p>`;
+                        });
+                    });
+
+                    // draw the blobs
+                    drawTheBlobs({track_window: {current_track : item}});
+                });
             });
 
             // volume control listeners
@@ -56,12 +65,12 @@ export function createPlayer(token) {
                     if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
                         var volMod = 0;
                         switch (e.code) {
-                            case 'ArrowUp':
-                                volMod = volumeChange;
-                                break;
-                            case 'ArrowDown':
-                                volMod = -volumeChange;
-                                break;
+                        case 'ArrowUp':
+                            volMod = volumeChange;
+                            break;
+                        case 'ArrowDown':
+                            volMod = -volumeChange;
+                            break;
                         }
                         player.getVolume().then(currentVolume => {
                             player.setVolume((currentVolume + volMod).clamp(0,1));
@@ -96,7 +105,7 @@ export function createPlayer(token) {
                     setUsersRepeatMode(token, repeatOptions[repeatMode], device_id);
                     console.log(repeatMode);
                 });
-            }
+            };
         });
     
         // Not Ready
@@ -107,11 +116,10 @@ export function createPlayer(token) {
         player.addListener('initialization_error', ({ message }) => {
             console.error(message);
         });
-    
         player.addListener('authentication_error', ({ message }) => {
             console.error(message);
         });
-    
+
         player.addListener('account_error', ({ message }) => {
             console.error(message);
         });
@@ -151,7 +159,7 @@ export function createPlayer(token) {
 
                 // change the lyrics
                 getSongLyrics(stateTrack.name, stateTrack.artists[0].name).then(r => {
-                    console.log(r)
+                    console.log(r);
                     MENUS.lyrics = r.lyrics.map(line => {
                         return `<p class="lyrics-line">${line}</p>`;
                     });
@@ -169,7 +177,7 @@ export function createPlayer(token) {
                             s.dataset.uri === stateTrack.uri || 
                             (stateTrack.linked_from.uri && s.dataset.uri === stateTrack.linked_from.uri)
                         );
-                        console.log(newPlayingIndex, stateTrack)
+                        console.log(newPlayingIndex, stateTrack);
                         if (songIndex > -1) {
                             songsListDOM[songIndex].classList.remove('currently-playing');
                             songsListDOM[songIndex].children[0].remove();
@@ -183,7 +191,7 @@ export function createPlayer(token) {
                             songsListDOM[newPlayingIndex].classList.add('currently-playing');
                         }
                     }
-                })
+                });
 
                 const songNumber = document.getElementById('song-number');
                 if (songNumber) {
@@ -195,9 +203,9 @@ export function createPlayer(token) {
                         getAlbumById(c.item.album.id, token).then(a => {
                             const trackIndex = a.tracks.items.findIndex((t) => {
                                 return t.uri === current_track.uri || 
-                                (current_track.linked_from.uri && t.uri === current_track.linked_from.uri)});
+                                (current_track.linked_from.uri && t.uri === current_track.linked_from.uri);});
                             songNumber.innerHTML = `${trackIndex + 1} of ${a.tracks.items.length}`;
-                        })
+                        });
                     });
 
                     
@@ -221,10 +229,10 @@ export function createPlayer(token) {
 
         document.addEventListener('show_now_playing', () => {
             const scrub = document.getElementById('scrub');
-            scrub.addEventListener("mousedown", (e) => mouseDownScrub(e, scrub));
-            scrub.addEventListener("mouseup", (e) => mouseUpScrub(e));
-            scrub.addEventListener("mouseleave", (e) => mouseUpScrub(e));
-            scrub.addEventListener("mousemove", (e) => scrubSong(e, scrub));
+            scrub.addEventListener('mousedown', (e) => mouseDownScrub(e, scrub));
+            scrub.addEventListener('mouseup', (e) => mouseUpScrub(e));
+            scrub.addEventListener('mouseleave', (e) => mouseUpScrub(e));
+            scrub.addEventListener('mousemove', (e) => scrubSong(e, scrub));
             
             
             // we need click listeners
@@ -249,9 +257,15 @@ export function createPlayer(token) {
                 }));
             };
 
-            document.getElementById('song-title').onclick = (e) => {
-                console.log(e.target.textContent);
-                document.dispatchEvent(new CustomEvent('show_lyrics'));
+            document.getElementById('song-title').onclick = () => {
+                // get current percentage
+                player.getCurrentState().then(({position, duration}) => {
+                    const percent = (position / duration);
+                    console.log(`You are ${percent} through the song!`);
+                    document.dispatchEvent(new CustomEvent('show_lyrics', {
+                        detail: { percent }
+                    }));
+                });
             };
             
             // draw elements
@@ -279,9 +293,9 @@ export function createPlayer(token) {
                 getAlbumById(c.item.album.id, token).then(a => {
                     const trackIndex = a.tracks.items.findIndex((t) => {
                         return t.uri === currentPlaying.uri || 
-                        (currentPlaying.linked_from.uri && t.uri === currentPlaying.linked_from.uri)}) + 1;
+                        (currentPlaying.linked_from.uri && t.uri === currentPlaying.linked_from.uri);}) + 1;
                     songNumber.innerHTML = `${trackIndex} of ${a.tracks.items.length}`;
-                })
+                });
             });
         };
 
@@ -331,9 +345,9 @@ export function createPlayer(token) {
                     const randomColor = r[getRandomInt(1,r.length)];
                     //console.log(randomColor);
                     b.style.background = `rgb(${randomColor[0]},${randomColor[1]},${randomColor[2]})`;
-                })                
+                });                
             });
-        }
+        };
 
         // get the state every second to update the players scrub bar
         const getSpotifyPlayerState = () => {
@@ -357,5 +371,5 @@ export function createPlayer(token) {
         getSpotifyPlayerState();
 
         player.connect();
-    }
+    };
 }
